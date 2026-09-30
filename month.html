@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Month · Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="month">
+    <h1 id="month-title">MONTH</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a id="prev-month" href="#">Previous Month</a></li>
+            <li><a id="next-month" href="#">Next Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+        </ul>
+    </nav>
+
+    <div class="grid">
+        <figure>
+            <div id="month-card"></div>
+            <figcaption>
+                <!-- Same row as the old Listen links, now jumping to each section -->
+                <div class="Listen">
+                    <a href="#sow"><div class="links">Sow</div></a>
+                    <a href="#plant"><div class="links">Plant</div></a>
+                    <a href="#harvest"><div class="links">Harvest</div></a>
+                </div>
+            </figcaption>
+        </figure>
+    </div>
+
+    <!-- Filled by app.js -->
+    <div class="month-info">
+        <section id="weather"></section>
+        <section id="jobs"></section>
+        <section id="sow"></section>
+        <section id="plant"></section>
+        <section id="harvest"></section>
+        <section id="month-notes"></section>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

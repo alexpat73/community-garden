@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Notes · Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="notes">
+    <h1>MY GARDEN NOTES</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="month.html">This Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+        </ul>
+    </nav>
+
+    <p class="intro">The last gardener left no notes, so don't be that gardener. Write down what you sow, plant and harvest. Notes are saved in this browser; download them to keep a backup or to hand over to whoever gets the plot after you.</p>
+
+    <div class="notes-page">
+        <form id="note-form" class="note-form">
+            <label>Date
+                <input type="date" name="date" required>
+            </label>
+            <label>What happened
+                <select name="kind">
+                    <option>Sowed</option>
+                    <option>Planted</option>
+                    <option>Harvested</option>
+                    <option>Watered / fed</option>
+                    <option>Problem</option>
+                    <option>Other</option>
+                </select>
+            </label>
+            <label>Plant
+                <input type="text" name="plant" list="plant-names" placeholder="e.g. Tomato">
+            </label>
+            <datalist id="plant-names"></datalist>
+            <label>Note
+                <textarea name="text" rows="3" placeholder="Where, how much, how it went…"></textarea>
+            </label>
+            <button type="submit">Save note</button>
+        </form>
+
+        <div class="note-tools">
+            <button type="button" id="export-notes">Download notes</button>
+            <label class="file-button">Load notes from file
+                <input type="file" id="import-notes" accept=".json,application/json">
+            </label>
+        </div>
+        <p id="notes-status" role="status"></p>
+
+        <ul id="notes-list" class="notes-list"></ul>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

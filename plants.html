@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Plants · Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="plants">
+    <h1>ALL PLANTS</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="month.html">This Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+        </ul>
+    </nav>
+
+    <p class="intro">The whole year at a glance for a German garden. The highlighted column is this month.</p>
+    <p class="legend"><strong>I</strong> = start indoors · <strong>S</strong> = sow outdoors · <strong>P</strong> = plant out · <strong>H</strong> = harvest</p>
+
+    <!-- Filled by app.js -->
+    <div class="table-wrap">
+        <table class="calendar" id="calendar"></table>
+    </div>
+    <div class="plant-list" id="plant-list"></div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

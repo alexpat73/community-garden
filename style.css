@@ -1,0 +1,490 @@
+/* ============================================================
+   Based on my earlier album-grid design (a Westside Gunn discography page).
+   Same colours, font, navbar, grid and flip cards - kept plain
+   on purpose so the real design can be added on top.
+   ============================================================ */
+
+body{
+    background-color: #1f261d; /* stand-in until you add a background image */
+    /* To use a photo like the original, put it in images/ and uncomment:
+    background-image: url(images/background.jpg);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    */
+    color: #ceb088;
+    font-family: Copperplate, "Copperplate Gothic Light", Georgia, serif;
+}
+/* Blurred background layer from the original - uncomment together with the image above.
+body::before{
+    filter: blur(8px);
+    z-index: -1;
+    background-image: url(images/background.jpg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+*/
+
+h1{
+    text-align: center;
+}
+a{
+    color: #DECAA9;
+}
+
+/* ---------- Navbar (unchanged) ---------- */
+.navbar ul{
+    list-style-type: none;
+    background-color: #CEB088;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+.navbar a{
+    color: white;
+    text-decoration: none;
+    padding: 15px;
+    display: block;
+    text-align: center;
+}
+.navbar a:hover{
+    background-color: #DECAA9;
+}
+.navbar li{
+    float: left;
+}
+
+.intro{
+    font-size: 1.3em;
+    margin: 20px 100px;
+}
+
+/* ---------- Grid of months (was the album grid) ---------- */
+.grid{
+    display: flex;
+    margin-left: 100px;
+    margin-right: 100px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-content: flex-start;
+}
+figure{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+figcaption{
+    text-align: center;
+}
+figure > a{
+    text-decoration: none;
+}
+.badge{
+    margin: 0;
+    color: whitesmoke;
+}
+
+/* ---------- Flip card (from test.css) ---------- */
+.maincontainer{
+    position: relative;
+    width: 250px;
+    height: 250px;
+    perspective: 1000px;
+    border-radius: 15px;
+}
+.thecard{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.maincontainer:hover .thecard,
+a:focus-visible .thecard{
+    transform: rotateY(180deg);
+}
+.thefront,
+.theback{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 16px;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 15px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.thefront{
+    color: whitesmoke;
+}
+.theback{
+    transform: rotateY(180deg);
+    background-color: #CEB088;
+    color: #1f261d;
+}
+.theback p{
+    margin: 4px 0;
+}
+.card-month{
+    font-size: 1.6em;
+}
+.current .maincontainer{
+    box-shadow: 0 0 0 4px #CEB088;
+}
+
+/* Placeholder colours per season - swap for photos like the album covers */
+.season-winter{ background-color: #4a5a6a; }
+.season-spring{ background-color: #5f7f45; }
+.season-summer{ background-color: #a88a2c; }
+.season-autumn{ background-color: #8a4b2a; }
+/* Photo per month, same idea as #hh1 ... #hh12:
+#m1{ background-image: url(images/m1front.jpg); }
+#m2{ background-image: url(images/m2front.jpg); }
+... up to #m12
+*/
+
+/* ---------- Jump links (were the YouTube / Spotify / Apple Music links) ---------- */
+.Listen{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    max-width: 600px;
+}
+.Listen a{
+    text-decoration: none;
+}
+.links{
+    min-width: 75px;
+    height: 100px;
+    margin: 10px;
+    padding: 0 8px;
+    border-radius: 15px;
+    background-color: #CEB088;
+    color: #1f261d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---------- Month page / plant info text ---------- */
+.month-info,
+.plant-list,
+.notes-page{
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 16px;
+    color: whitesmoke;
+}
+.month-info h2,
+.plant-list h2,
+.plant-list h3{
+    color: #CEB088;
+}
+.facts{
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 16px;
+}
+.facts dt{
+    color: #CEB088;
+}
+.facts dd{
+    margin: 0;
+}
+.plant-names li{
+    margin-bottom: 4px;
+}
+.de,
+.note,
+.small,
+.empty{
+    opacity: 0.75;
+}
+.tag{
+    font-size: 0.8em;
+    border: 1px solid #CEB088;
+    border-radius: 4px;
+    padding: 0 4px;
+    color: #CEB088;
+}
+.plant:target{
+    padding: 8px;
+    background:
+        linear-gradient(90deg, #CEB088 50%, transparent 50%),
+        linear-gradient(90deg, #CEB088 50%, transparent 50%),
+        linear-gradient(0deg, #CEB088 50%, transparent 50%),
+        linear-gradient(0deg, #CEB088 50%, transparent 50%);
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-size: 16px 2px, 16px 2px, 2px 16px, 2px 16px;
+    background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0%;
+    animation: border-dance 8s infinite linear;
+}
+
+
+@keyframes border-dance {
+  to {
+    background-position: 100% 0%, 0% 100%, 0% 0%, 100% 100%;
+  }
+    
+}
+
+/* ---------- Home: right now + forecast ---------- */
+.now{
+    max-width: 600px;
+    margin: 0 auto 20px;
+    padding: 0 16px;
+    color: whitesmoke;
+}
+.now h2{
+    color: #CEB088;
+}
+.forecast{
+    border-collapse: collapse;
+    width: 100%;
+}
+.forecast th,
+.forecast td{
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid rgba(206, 176, 136, 0.3);
+}
+.forecast .frost{
+    color: #9fd3ff;
+}
+
+/* ---------- All plants: calendar table ---------- */
+.legend{
+    margin: 0 100px;
+    font-size: 1.3em;
+    font-weight:bolder ;
+}
+.table-wrap{
+    overflow-x: auto;
+    margin: 20px 100px;
+}
+.calendar{
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    color: whitesmoke;
+}
+.calendar th,
+.calendar td{
+    border: 1px solid rgba(206, 176, 136, 0.4);
+    padding: 4px 6px;
+    text-align: center;
+}
+.calendar tbody th{
+    text-align: left;
+    white-space: nowrap;
+}
+.calendar .group th{
+    color: #CEB088;
+    background-color: rgba(206, 176, 136, 0.15);
+}
+.calendar .now{
+    background-color: rgba(206, 176, 136, 0.25);
+}
+
+/* ---------- Notes page ---------- */
+.note-form label{
+    display: block;
+    margin-bottom: 12px;
+}
+.note-form input,
+.note-form select,
+.note-form textarea{
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    font: inherit;
+}
+button,
+.file-button{
+    background-color: #CEB088;
+    color: #1f261d;
+    border: none;
+    border-radius: 15px;
+    padding: 10px 16px;
+    font: inherit;
+    cursor: pointer;
+    display: inline-block;
+}
+.note-tools{
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.file-button{
+    position: relative;
+}
+.file-button input{ /* hidden but still reachable with the keyboard */
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.file-button:focus-within{
+    outline: 2px solid whitesmoke;
+}
+.notes-list{
+    padding-left: 0;
+    list-style: none;
+}
+.notes-list li{
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(206, 176, 136, 0.3);
+}
+.notes-list .delete{
+    margin-top: 6px;
+    padding: 4px 10px;
+    font-size: 0.8em;
+    display: block;
+}
+
+/* ---------- Minecraft pumpkin (September) ---------- */
+.pumpkin-spot{
+    text-align: center;
+}
+.pumpkin-count{
+    min-height: 1.2em;
+}
+.mc-stage{ /* the button you hold down */
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 180px;
+    height: 180px;
+    margin: 0 auto;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
+.mc-stage:focus-visible{
+    outline: 2px solid #CEB088;
+    outline-offset: 4px;
+}
+.mc-cube{
+    --size: 96px;
+    --crack: none; /* app.js swaps in destroy_stage_0 ... 9 */
+    position: relative;
+    display: block;
+    width: var(--size);
+    height: var(--size);
+    transform-style: preserve-3d;
+    transform: rotateX(-30deg) rotateY(-45deg);
+}
+.mc-face{
+    position: absolute;
+    inset: 0;
+    background: url(images/minecraftPumpkinAnimation/pumpkin_side.png) center / 100% 100%;
+    image-rendering: pixelated; /* keep the 16x16 textures blocky */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+.mc-face::after{ /* the crack overlay */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--crack) center / 100% 100%;
+    image-rendering: pixelated;
+}
+/* Minecraft-style shading: top brightest, sides darker */
+.mc-front { transform: translateZ(calc(var(--size) / 2));                  filter: brightness(0.8); }
+.mc-back  { transform: rotateY(180deg) translateZ(calc(var(--size) / 2));  filter: brightness(0.8); }
+.mc-right { transform: rotateY(90deg) translateZ(calc(var(--size) / 2));   filter: brightness(0.6); }
+.mc-left  { transform: rotateY(-90deg) translateZ(calc(var(--size) / 2));  filter: brightness(0.6); }
+.mc-top   { transform: rotateX(90deg) translateZ(calc(var(--size) / 2)); }
+.mc-bottom{ transform: rotateX(-90deg) translateZ(calc(var(--size) / 2));  filter: brightness(0.5); }
+.mc-top,
+.mc-bottom{
+    background-image: url(images/minecraftPumpkinAnimation/pumpkin_top.png);
+}
+/* Dark outline when you point at the block, like in the game */
+.mc-stage:hover .mc-block .mc-face,
+.mc-stage:focus-visible .mc-block .mc-face{
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.6);
+}
+.mc-stage.broken .mc-block{
+    visibility: hidden;
+}
+.mc-stage.regrow .mc-block{
+    animation: mc-regrow 0.4s ease-out;
+}
+.mc-particle{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    margin: -6px;
+    background: url(images/minecraftPumpkinAnimation/pumpkin_side.png) 0 0 / 400% 400%;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+.mc-item{ /* the dropped pumpkin */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -16px;
+    margin-top: 10px;
+    pointer-events: none;
+}
+.mc-bob{
+    display: block;
+    animation: mc-bob 1.5s ease-in-out infinite;
+}
+.mc-item .mc-cube{
+    --size: 32px;
+    animation: mc-spin 4s linear infinite;
+}
+@keyframes mc-regrow{
+    from{ scale: 0.2; }
+    to{ scale: 1; }
+}
+@keyframes mc-bob{
+    0%, 100%{ transform: translateY(0); }
+    50%{ transform: translateY(-8px); }
+}
+@keyframes mc-spin{
+    from{ transform: rotateX(-30deg) rotateY(0deg); }
+    to{ transform: rotateX(-30deg) rotateY(360deg); }
+}
+@media (prefers-reduced-motion: reduce){
+    .mc-bob,
+    .mc-item .mc-cube,
+    .mc-stage.regrow .mc-block{
+        animation: none;
+    }
+}
+
+/* ---------- Phones: drop the big side margins ---------- */
+@media (max-width: 700px){
+    .grid,
+    .intro,
+    .legend,
+    .table-wrap{
+        margin-left: 16px;
+        margin-right: 16px;
+    }
+}

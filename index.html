@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="home">
+    <h1>COMMUNITY GARDEN</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="month.html">This Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+        </ul>
+    </nav>
+
+    <p class="intro">New to your allotment and the last gardener left no notes? Pick a month to see what to sow, plant and harvest in a German garden, and keep your own notes so the next person isn't starting from zero.</p>
+
+    <section class="now">
+        <h2>Right now</h2>
+        <p id="now-month"></p>
+        <!-- Minecraft pumpkin, only shown in pumpkin season (see PUMPKIN_MONTHS in app.js) -->
+        <div id="pumpkin-spot" class="pumpkin-spot"></div>
+        <label for="city">This week's weather in</label>
+        <select id="city"></select>
+        <p id="forecast-summary" role="status"></p>
+        <table id="forecast" class="forecast"></table>
+        <p class="small">Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a></p>
+    </section>
+
+    <!-- Filled by app.js: one flip card per month -->
+    <div class="grid" id="month-grid"></div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
