@@ -87,3 +87,4 @@ The AI ran automated headless browser tests (jsdom) on all four pages: the month
 - Shrink the favicon (e.g. with SVGO, or use a small PNG) and run a Lighthouse audit.
 - Test on a phone and in Safari.
 - Maybe show the pumpkin in October too, or build the Plants vs. Zombies pumpkin idea.
+- For October, it will be a carrot harvested, instead of a pumpkin
