@@ -343,25 +343,60 @@ function renderNotesPage() {
       : '<li class="empty">No notes yet. Your first one goes above.</li>';
   }
 
-  function persist() {
-    if (!saveNotes(notes)) {
-      status.textContent = "Your browser is blocking storage, so notes will be lost when you close this page. Use 'Download notes' to keep them.";
-    }
+  function setStatus(message, isError = false) {
+    status.textContent = message;
+    status.classList.toggle("is-error", isError);
   }
+
+  // Returns false (and says so) when the browser blocks storage.
+  function persist() {
+    if (saveNotes(notes)) return true;
+    setStatus("Your browser is blocking storage, so notes will be lost when you close this page. Use 'Download notes' to keep them.", true);
+    return false;
+  }
+
+  // Every field with a data-error message is required.
+  const requiredFields = [...form.querySelectorAll("[data-error]")];
+
+  function showError(field, show) {
+    field.setAttribute("aria-invalid", String(show));
+    $(`#${field.id}-error`).textContent = show ? field.dataset.error : "";
+  }
+  requiredFields.forEach((field) => field.addEventListener("input", () => {
+    if (field.value.trim()) showError(field, false);
+  }));
+
+  // Live character counter, so people see the 1000-character limit coming.
+  const noteText = form.elements.text;
+  const counter = $("#note-text-count");
+  function updateCounter() {
+    const used = noteText.value.length;
+    const max = noteText.maxLength;
+    counter.textContent = `${used} / ${max} characters${used >= max ? ": limit reached" : ""}`;
+    counter.classList.toggle("near", used >= max * 0.9);
+  }
+  noteText.addEventListener("input", updateCounter);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+    const missing = requiredFields.filter((field) => !field.value.trim());
+    requiredFields.forEach((field) => showError(field, missing.includes(field)));
+    if (missing.length) {
+      missing[0].focus();
+      setStatus(missing.length === 1 ? "One field is still empty." : `${missing.length} fields are still empty.`, true);
+      return;
+    }
     notes.push({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       date: form.elements.date.value,
       kind: form.elements.kind.value,
       plant: form.elements.plant.value.trim(),
-      text: form.elements.text.value.trim(),
+      text: noteText.value.trim(),
     });
-    persist();
+    if (persist()) setStatus("Note saved.");
     form.elements.plant.value = "";
-    form.elements.text.value = "";
-    status.textContent = "Note saved.";
+    noteText.value = "";
+    updateCounter();
     draw();
   });
 
@@ -369,8 +404,7 @@ function renderNotesPage() {
     const button = event.target.closest(".delete");
     if (!button || !confirm("Delete this note?")) return;
     notes = notes.filter((note) => String(note.id) !== button.dataset.id);
-    persist();
-    status.textContent = "Note deleted.";
+    if (persist()) setStatus("Note deleted.");
     draw();
   });
 
@@ -405,11 +439,10 @@ function renderNotesPage() {
         });
         added++;
       }
-      persist();
-      status.textContent = `Loaded ${added} new note${added === 1 ? "" : "s"} from ${file.name}.`;
+      if (persist()) setStatus(`Loaded ${added} new note${added === 1 ? "" : "s"} from ${file.name}.`);
       draw();
     } catch {
-      status.textContent = "That file doesn't look like a garden notes file.";
+      setStatus("That file doesn't look like a garden notes file.", true);
     }
     event.target.value = "";
   });

@@ -6,6 +6,7 @@
     <title>My Notes · Community Garden</title>
     <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
     <link rel="stylesheet" href="style.css">
+    <link rel="preload" href="font/urbanist-latin.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 <body data-page="notes">
     <h1>MY GARDEN NOTES</h1>
@@ -14,19 +15,30 @@
             <li><a href="index.html">Home</a></li>
             <li><a href="month.html">This Month</a></li>
             <li><a href="plants.html">All Plants</a></li>
-            <li><a href="notes.html">My Notes</a></li>
+            <li><a href="notes.html" aria-current="page">My Notes</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
         </ul>
     </nav>
 
     <p class="intro">The last gardener left no notes, so don't be that gardener. Write down what you sow, plant and harvest. Notes are saved in this browser; download them to keep a backup or to hand over to whoever gets the plot after you.</p>
 
     <div class="notes-page">
-        <form id="note-form" class="note-form">
-            <label>Date
-                <input type="date" name="date" required>
-            </label>
-            <label>What happened
-                <select name="kind">
+        <!-- novalidate: app.js shows its own plain-language messages instead of the browser bubbles -->
+        <form id="note-form" class="note-form" novalidate>
+            <p class="form-hint">All fields are required.</p>
+
+            <div class="field">
+                <label for="note-date">Date</label>
+                <input type="date" id="note-date" name="date" required
+                       data-error="Choose the day it happened." aria-describedby="note-date-error">
+                <p class="field-error" id="note-date-error"></p>
+            </div>
+
+            <div class="field">
+                <label for="note-kind">What happened</label>
+                <select id="note-kind" name="kind" required
+                        data-error="Choose what you did." aria-describedby="note-kind-error">
+                    <option value="" disabled selected>Choose one…</option>
                     <option>Sowed</option>
                     <option>Planted</option>
                     <option>Harvested</option>
@@ -34,14 +46,27 @@
                     <option>Problem</option>
                     <option>Other</option>
                 </select>
-            </label>
-            <label>Plant
-                <input type="text" name="plant" list="plant-names" placeholder="e.g. Tomato">
-            </label>
-            <datalist id="plant-names"></datalist>
-            <label>Note
-                <textarea name="text" rows="3" placeholder="Where, how much, how it went…"></textarea>
-            </label>
+                <p class="field-error" id="note-kind-error"></p>
+            </div>
+
+            <div class="field">
+                <label for="note-plant">Plant</label>
+                <input type="text" id="note-plant" name="plant" list="plant-names" maxlength="60" required
+                       placeholder="e.g. Tomato, or All beds"
+                       data-error="Write which plant this is about." aria-describedby="note-plant-error">
+                <datalist id="plant-names"></datalist>
+                <p class="field-error" id="note-plant-error"></p>
+            </div>
+
+            <div class="field">
+                <label for="note-text">Note</label>
+                <textarea id="note-text" name="text" rows="4" maxlength="1000" required
+                          placeholder="Where, how much, how it went…"
+                          data-error="Write a short note about what you did." aria-describedby="note-text-count note-text-error"></textarea>
+                <p class="char-count" id="note-text-count">0 / 1000 characters</p>
+                <p class="field-error" id="note-text-error"></p>
+            </div>
+
             <button type="submit">Save note</button>
         </form>
 

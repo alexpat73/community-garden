@@ -1,19 +1,42 @@
 /* ============================================================
    Based on my earlier album-grid design (a Westside Gunn discography page).
-   Same colours, font, navbar, grid and flip cards - kept plain
-   on purpose so the real design can be added on top.
+   Colours have one job each: tan = important (headings, current page,
+   emphasis), green = you can click this (links, buttons, tags).
    ============================================================ */
 
+:root{
+    color-scheme: dark;    /* dark date picker, dropdowns and scrollbars */
+    --bg: #1F271D;
+    --text: #FAF7F0;       /* body text, 14.4:1 on --bg */
+    --accent: #CDB088;     /* headings, title, active nav item, emphasis, 7.4:1 */
+    --link: #8FB37A;       /* links, tags, buttons: anything clickable, 6.5:1 */
+    --link-hover: #A6C792;
+    --error: #F29B86;      /* form errors, 7.2:1 */
+    --field: #283225;      /* form field background */
+    --line: rgba(205, 176, 136, 0.3);
+}
+
+/* Urbanist: a free font (SIL Open Font License, see font/Urbanist-OFL.txt) close to Aristotelica Pro.
+   Self-hosted rather than loaded from Google Fonts: faster, and visitors' IP addresses
+   aren't sent to Google, which German courts have ruled a GDPR problem. */
+@font-face{
+    font-family: "Urbanist";
+    src: url(font/urbanist-latin.woff2) format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
 body{
-    background-color: #1f261d; /* stand-in until you add a background image */
+    background-color: var(--bg); /* stand-in until you add a background image */
     /* To use a photo like the original, put it in images/ and uncomment:
     background-image: url(images/background.jpg);
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
     */
-    color: #ceb088;
-    font-family: Copperplate, "Copperplate Gothic Light", Georgia, serif;
+    color: var(--text);
+    font-family: "Urbanist", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.5;
 }
 /* Blurred background layer from the original - uncomment together with the image above.
 body::before{
@@ -29,38 +52,63 @@ body::before{
 }
 */
 
+h1,
+h2,
+h3{
+    color: var(--accent);
+}
 h1{
     text-align: center;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+}
+h2,
+h3{
+    font-weight: 600;
+}
+strong{
+    color: var(--accent);
 }
 a{
-    color: #DECAA9;
+    color: var(--link);
+}
+@media (prefers-reduced-motion: no-preference){
+    html{
+        scroll-behavior: smooth; /* e.g. the FAQ link gliding down the page */
+    }
 }
 
-/* ---------- Navbar (unchanged) ---------- */
+/* ---------- Navbar: plain links, no band ---------- */
 .navbar ul{
     list-style-type: none;
-    background-color: #CEB088;
     padding: 0;
     margin: 0;
-    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 .navbar a{
-    color: white;
+    color: var(--link);
     text-decoration: none;
-    padding: 15px;
+    padding: 12px 15px;
     display: block;
     text-align: center;
 }
-.navbar a:hover{
-    background-color: #DECAA9;
+.navbar a:hover,
+.navbar a:focus-visible{
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }
-.navbar li{
-    float: left;
+.navbar a[aria-current="page"]{
+    color: var(--accent);
 }
 
+/* Body text stays at a comfortable line length */
 .intro{
     font-size: 1.3em;
-    margin: 20px 100px;
+    max-width: calc(65ch / 1.3); /* = 65ch of normal text, so it lines up with the sections below */
+    margin: 20px auto;
+    padding: 0 16px;
 }
 
 /* ---------- Grid of months (was the album grid) ---------- */
@@ -86,7 +134,6 @@ figure > a{
 }
 .badge{
     margin: 0;
-    color: whitesmoke;
 }
 
 /* ---------- Flip card (from test.css) ---------- */
@@ -128,12 +175,12 @@ a:focus-visible .thecard{
     text-align: center;
 }
 .thefront{
-    color: whitesmoke;
+    color: var(--text);
 }
 .theback{
     transform: rotateY(180deg);
-    background-color: #CEB088;
-    color: #1f261d;
+    background-color: var(--accent);
+    color: var(--bg);
 }
 .theback p{
     margin: 4px 0;
@@ -141,8 +188,11 @@ a:focus-visible .thecard{
 .card-month{
     font-size: 1.6em;
 }
+.card-season{
+    text-transform: capitalize;
+}
 .current .maincontainer{
-    box-shadow: 0 0 0 4px #CEB088;
+    box-shadow: 0 0 0 4px var(--accent);
 }
 
 /* Placeholder colours per season - swap for photos like the album covers */
@@ -172,26 +222,24 @@ a:focus-visible .thecard{
     margin: 10px;
     padding: 0 8px;
     border-radius: 15px;
-    background-color: #CEB088;
-    color: #1f261d;
+    background-color: var(--link);
+    color: var(--bg);
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+.Listen a:hover .links{
+    background-color: var(--link-hover);
 }
 
 /* ---------- Month page / plant info text ---------- */
 .month-info,
 .plant-list,
 .notes-page{
-    max-width: 600px;
+    max-width: 65ch;
     margin: 0 auto;
     padding: 0 16px;
-    color: whitesmoke;
-}
-.month-info h2,
-.plant-list h2,
-.plant-list h3{
-    color: #CEB088;
 }
 .facts{
     display: grid;
@@ -199,7 +247,7 @@ a:focus-visible .thecard{
     gap: 4px 16px;
 }
 .facts dt{
-    color: #CEB088;
+    color: var(--accent);
 }
 .facts dd{
     margin: 0;
@@ -215,18 +263,18 @@ a:focus-visible .thecard{
 }
 .tag{
     font-size: 0.8em;
-    border: 1px solid #CEB088;
+    border: 1px solid var(--link);
     border-radius: 4px;
     padding: 0 4px;
-    color: #CEB088;
+    color: var(--link);
 }
 .plant:target{
     padding: 8px;
     background:
-        linear-gradient(90deg, #CEB088 50%, transparent 50%),
-        linear-gradient(90deg, #CEB088 50%, transparent 50%),
-        linear-gradient(0deg, #CEB088 50%, transparent 50%),
-        linear-gradient(0deg, #CEB088 50%, transparent 50%);
+        linear-gradient(90deg, var(--accent) 50%, transparent 50%),
+        linear-gradient(90deg, var(--accent) 50%, transparent 50%),
+        linear-gradient(0deg, var(--accent) 50%, transparent 50%),
+        linear-gradient(0deg, var(--accent) 50%, transparent 50%);
     background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
     background-size: 16px 2px, 16px 2px, 2px 16px, 2px 16px;
     background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0%;
@@ -243,13 +291,9 @@ a:focus-visible .thecard{
 
 /* ---------- Home: right now + forecast ---------- */
 .now{
-    max-width: 600px;
+    max-width: 65ch;
     margin: 0 auto 20px;
     padding: 0 16px;
-    color: whitesmoke;
-}
-.now h2{
-    color: #CEB088;
 }
 .forecast{
     border-collapse: collapse;
@@ -259,7 +303,7 @@ a:focus-visible .thecard{
 .forecast td{
     text-align: left;
     padding: 4px 8px;
-    border-bottom: 1px solid rgba(206, 176, 136, 0.3);
+    border-bottom: 1px solid var(--line);
 }
 .forecast .frost{
     color: #9fd3ff;
@@ -279,11 +323,10 @@ a:focus-visible .thecard{
     border-collapse: collapse;
     width: 100%;
     min-width: 640px;
-    color: whitesmoke;
 }
 .calendar th,
 .calendar td{
-    border: 1px solid rgba(206, 176, 136, 0.4);
+    border: 1px solid rgba(205, 176, 136, 0.4);
     padding: 4px 6px;
     text-align: center;
 }
@@ -292,17 +335,55 @@ a:focus-visible .thecard{
     white-space: nowrap;
 }
 .calendar .group th{
-    color: #CEB088;
-    background-color: rgba(206, 176, 136, 0.15);
+    color: var(--accent);
+    background-color: rgba(205, 176, 136, 0.15);
 }
 .calendar .now{
-    background-color: rgba(206, 176, 136, 0.25);
+    background-color: rgba(205, 176, 136, 0.25);
+}
+
+/* ---------- Form fields: every field looks the same ---------- */
+input:not([type="file"]),
+select,
+textarea{
+    font: inherit;
+    color: var(--text);
+    background-color: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+select{ /* own arrow, so the dropdown matches the other fields in every browser */
+    -webkit-appearance: none;
+    appearance: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238FB37A' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+}
+input:not([type="file"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible{
+    outline: 2px solid var(--link);
+    outline-offset: 1px;
+    border-color: var(--link);
+}
+.note-form [aria-invalid="true"]{ /* class added so it beats the input:not() rule above */
+    border-color: var(--error);
 }
 
 /* ---------- Notes page ---------- */
+.form-hint{
+    opacity: 0.75;
+}
+.note-form .field{
+    margin-bottom: 16px;
+}
 .note-form label{
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
+    font-weight: 600;
 }
 .note-form input,
 .note-form select,
@@ -310,19 +391,58 @@ a:focus-visible .thecard{
     display: block;
     width: 100%;
     box-sizing: border-box;
-    margin-top: 4px;
-    font: inherit;
+    min-height: 46px;
+}
+.note-form input,
+.note-form select{
+    height: 46px; /* Safari draws date fields taller otherwise */
+}
+.note-form input[type="date"]::-webkit-datetime-edit{
+    padding: 0;
+}
+.note-form textarea{
+    resize: vertical; /* can grow a bit, but not down the whole page */
+    min-height: 7em;
+    max-height: 20em;
+}
+.char-count,
+.field-error{
+    margin: 4px 0 0;
+    font-size: 0.9em;
+}
+.char-count{
+    opacity: 0.75;
+}
+.char-count.near{
+    color: var(--accent);
+    opacity: 1;
+}
+.field-error,
+.is-error{
+    color: var(--error);
+}
+.field-error:empty{
+    display: none;
 }
 button,
 .file-button{
-    background-color: #CEB088;
-    color: #1f261d;
+    background-color: var(--link);
+    color: var(--bg);
     border: none;
     border-radius: 15px;
     padding: 10px 16px;
     font: inherit;
+    font-weight: 600;
     cursor: pointer;
     display: inline-block;
+}
+button:not(.mc-stage):hover,
+.file-button:hover{
+    background-color: var(--link-hover);
+}
+button:focus-visible{
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
 }
 .note-tools{
     margin-top: 20px;
@@ -340,7 +460,7 @@ button,
     cursor: pointer;
 }
 .file-button:focus-within{
-    outline: 2px solid whitesmoke;
+    outline: 2px solid var(--text);
 }
 .notes-list{
     padding-left: 0;
@@ -348,13 +468,42 @@ button,
 }
 .notes-list li{
     padding: 10px 0;
-    border-bottom: 1px solid rgba(206, 176, 136, 0.3);
+    border-bottom: 1px solid var(--line);
 }
-.notes-list .delete{
+.notes-list .delete{ /* outlined: less prominent than Save */
     margin-top: 6px;
     padding: 4px 10px;
     font-size: 0.8em;
     display: block;
+    background: none;
+    color: var(--link);
+    border: 1px solid var(--link);
+}
+.notes-list .delete:hover{
+    background-color: rgba(143, 179, 122, 0.15);
+}
+
+/* ---------- Home: FAQ ---------- */
+.faq{
+    max-width: 65ch;
+    margin: 40px auto;
+    padding: 0 16px;
+}
+.faq details{
+    border-bottom: 1px solid var(--line);
+    padding: 12px 0;
+}
+.faq summary{
+    color: var(--link);
+    font-weight: 600;
+    cursor: pointer;
+}
+.faq summary:hover{
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.faq details p{
+    margin: 8px 0 0;
 }
 
 /* ---------- Minecraft pumpkin (September) ---------- */
@@ -381,7 +530,7 @@ button,
     touch-action: manipulation;
 }
 .mc-stage:focus-visible{
-    outline: 2px solid #CEB088;
+    outline: 2px solid var(--link);
     outline-offset: 4px;
 }
 .mc-cube{
@@ -481,7 +630,6 @@ button,
 /* ---------- Phones: drop the big side margins ---------- */
 @media (max-width: 700px){
     .grid,
-    .intro,
     .legend,
     .table-wrap{
         margin-left: 16px;
