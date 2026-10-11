@@ -93,14 +93,17 @@ a{
     padding: 12px 15px;
     display: block;
     text-align: center;
-}
-.navbar a:hover,
-.navbar a:focus-visible{
-    text-decoration: underline;
-    text-underline-offset: 4px;
+    border-radius: 8px;
 }
 .navbar a[aria-current="page"]{
     color: var(--accent);
+}
+/* Lighter green tab on hover. Comes after the rule above so the current page
+   also switches to dark text (tan on light green would be unreadable). */
+.navbar a:hover,
+.navbar a:focus-visible{
+    background-color: var(--link-hover);
+    color: var(--bg);
 }
 
 /* Body text stays at a comfortable line length */
