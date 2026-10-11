@@ -26,10 +26,12 @@ No build step and no install: open `index.html` in a browser. The forecast needs
 - `data.js`: all plant and month data. Edit this to add plants or change dates.
 - `app.js`: the logic for every page.
 - `style.css`: all styles.
+- `font/`: the Urbanist web font and its licence.
 - `PROCESS_LOG.md`: my process log (Class Notebook).
 
 ## Credits
 
 - Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
+- Font: [Urbanist](https://github.com/coreyhu/Urbanist) by Corey Hu, SIL Open Font License 1.1.
 - Monthly climate values are approximate long-term averages for central Germany.
 - Minecraft pumpkin textures and sounds © Mojang Studios. Plants vs. Zombies peashooter © PopCap / Electronic Arts. Used for a non-commercial university project; not affiliated with either.

@@ -88,3 +88,63 @@ The AI ran automated headless browser tests (jsdom) on all four pages: the month
 - Test on a phone and in Safari.
 - Maybe show the pumpkin in October too, or build the Plants vs. Zombies pumpkin idea.
 - For October, it will be a carrot harvested, instead of a pumpkin
+
+---
+
+## Entry 2 · 11 October 2026 · Usability pass with Nielsen's heuristics
+
+### Session goal
+
+Evaluate the first version against Nielsen Norman Group's 10 usability heuristics ([source](https://www.nngroup.com/articles/ten-usability-heuristics/)) and fix what I found.
+
+### How the session went
+
+| # | What I asked the AI (summarised) | What the AI did | What I decided or changed |
+|---|---|---|---|
+| 1 | Shared my heuristic notes and my list of improvements: a new colour palette, an FAQ, a simpler font like Aristotelica Pro, consistent and required fields in the notes form with a 1000-character limit, no tan band behind the nav, sentence case for the intro, and `max-width: 65ch` on body text. | Implemented the whole list, then tested it and checked screenshots made with WebKit (Safari's engine). | Wrote the evaluation, chose the palette and gave each colour one job: tan = important, green = you can click this. |
+| 2 | Added the Aristotelica Pro font files to the project. | Read the licence stored inside the font files: the free version excludes websites and sharing the files. Rendered Aristotelica next to 8 free fonts to find the closest match. | Went with Urbanist, a free font that looks very similar. The Aristotelica files stay on my computer and are blocked from the repo. |
+| 3 | Commit, publish and add this entry. | Pushed to GitHub and checked the live site. | — |
+
+### Changes, by heuristic
+
+- **#1 Visibility of system status:** a live character counter on notes ("45 / 1000 characters"), clear status messages ("Note saved.", "2 fields are still empty."), and the current page shown in tan in the nav.
+- **#2 Match between the system and the real world:** the FAQ explains garden terms like "start indoors", "sow outdoors" and "plant out".
+- **#4 Consistency and standards:** each colour has one job everywhere; every form field has the same look; the FAQ link sits in the same place on every page.
+- **#5 Error prevention:** "All fields are required" is shown before typing; the note is capped at 1000 characters; "What happened" starts on "Choose one…" instead of a pre-selected answer; the note box can't be dragged down the whole page.
+- **#8 Aesthetic and minimalist design:** a simpler font, no band behind the nav, comfortable line length (65ch), and FAQ answers folded away until opened.
+- **#9 Help users recognise, diagnose and recover from errors:** a plain-language message under each empty field ("Write which plant this is about."), a coral border, and the cursor jumps to the first empty field.
+- **#10 Help and documentation:** an FAQ for first-time gardeners at the bottom of the home page, with nine questions (watering, spacing, frost, allotment rules, what to do when the previous gardener left nothing), reachable from the nav on every page.
+
+### Problems and fixes
+
+- **Font licence:** Aristotelica Pro's free licence says *"for use of the font on websites as webfonts … a software license is required"* and forbids sharing the files. Fix: Urbanist (SIL Open Font License), with the Aristotelica files added to `.gitignore`.
+- **Date field taller than the others in Safari:** fixed by giving all single-line fields the same height.
+- **The Plant field's error border stayed grey:** CSS specificity. The base rule `input:not([type="file"])` was more specific than `[aria-invalid="true"]`, because `:not()` counts what's inside it. Fix: a more specific error selector.
+- **Intro wider than the text below it:** `ch` depends on the element's own font size, and the intro is 1.3× bigger. Fix: `max-width: calc(65ch / 1.3)`.
+- **A warning got overwritten:** if the browser blocked storage, "Note saved." replaced the warning that it *wasn't* saved. Fixed.
+- **Screenshots showed the month cards mirrored:** a small control test proved the screenshot method ignores `backface-visibility`; real Safari doesn't. No change needed.
+
+### Testing
+
+- Three automated test suites (jsdom). New tests cover the form checks, the character counter, the nav and the FAQ. Tests that assumed it was September now use today's date. All pass.
+- Screenshots with WebKit at desktop and phone width, which caught the date-field and error-border bugs above.
+- Contrast checked against WCAG: body text 14.4:1, tan 7.4:1, green 6.5:1, error coral 7.2:1. All are above the 4.5:1 needed for normal text.
+
+### Web optimization notes
+
+- The font is hosted with the site and cut down to the characters the site uses: 25 KB instead of 85 KB. It is preloaded, and `font-display: swap` shows text right away while it loads.
+- No Google Fonts: loading fonts from Google sends visitors' IP addresses to Google, which a German court (LG München, 2022) ruled a GDPR violation.
+
+### What I learned
+
+- "Free for personal use" doesn't mean free to use on a website, and the licence text is stored inside the font file itself.
+- The `ch` unit is relative to the element's own font size.
+- `:not()` adds to a selector's specificity.
+- `color-scheme: dark` makes the browser's own form controls (date picker, dropdowns) match a dark site.
+
+### Next steps
+
+- October easter egg: a carrot harvest instead of the pumpkin.
+- Contrast on the card fronts: "Spring" on green is 4.3:1 and the summer card is 3.1:1, below the 4.5:1 that small text needs.
+- Tags are green but not clickable, which bends the "green = click" rule; decide whether to keep them green.
+- Still open from Entry 1: background image and month photos, a smaller favicon, a Lighthouse audit, testing on a real phone.
