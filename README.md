@@ -21,12 +21,23 @@ Made for the GUI Design & Web Optimization course. The brief:
 
 No build step and no install: open `index.html` in a browser. The forecast needs an internet connection; everything else works offline.
 
+## Tests
+
+Browser tests for every page, the notes form and both mini-games (they use [Playwright](https://playwright.dev/)):
+
+```
+npm install
+npx playwright install chromium-headless-shell
+npm test
+```
+
 ## Files
 
 - `data.js`: all plant and month data. Edit this to add plants or change dates.
 - `app.js`: the logic for every page.
 - `style.css`: all styles.
 - `font/`: the Urbanist web font and its licence.
+- `tests/`: the browser tests.
 - `PROCESS_LOG.md`: my process log (Class Notebook).
 
 ## Credits

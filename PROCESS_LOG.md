@@ -148,3 +148,56 @@ Evaluate the first version against Nielsen Norman Group's 10 usability heuristic
 - Contrast on the card fronts: "Spring" on green is 4.3:1 and the summer card is 3.1:1, below the 4.5:1 that small text needs.
 - Tags are green but not clickable, which bends the "green = click" rule; decide whether to keep them green.
 - Still open from Entry 1: background image and month photos, a smaller favicon, a Lighthouse audit, testing on a real phone.
+
+
+---
+
+## Entry 3 · 11–12 October 2026 · Nav hover and the October carrot
+
+### Session goal
+
+Bring back a hover effect in the nav, and build the October easter egg from my Entry 1 plan: a Minecraft carrot you can plant, grow and harvest, as interactive as the September pumpkin.
+
+### How the session went
+
+| # | What I asked the AI (summarised) | What the AI did | What I decided or changed |
+|---|---|---|---|
+| 1 | Add back the hover effect on the nav tabs, as a lighter green instead of an underline. | Lighter green tab with dark text (8.2:1). Noticed tan text on light green would be unreadable (1.1:1), so the current page also switches to dark text on hover. | Chose lighter green. |
+| 2 | The carrot files are in; tell me if anything is missing. I want to plant, click to grow until ready, then harvest. | Checked my files and listed what was missing: the carrot item, the dirt texture and (optional) a bone meal sound. Built the game so missing textures had stand-ins and the real ones were used automatically once added. | Found and supplied all the textures and sounds. |
+| 3 | Which files exactly? | Gave the exact file names and where to find them. | Downloaded them. |
+| 4 | Uploaded them, plus the bone meal sound. | Found that my `dirt.png` was a 3D picture of a whole block, not the flat texture, so it couldn't be used on the block's sides. | Replaced it with the flat 16×16 texture. |
+| 5 | Add Entry 3 and keep the tests in the repo. | Moved the browser tests into `tests/` (run with `npm test`) and wrote this entry. | — |
+
+### How the carrot works
+
+1. **Plant:** click the dry farmland; it turns dark (watered) and a seedling appears, with a crop-placing sound.
+2. **Grow:** each click is one growth step with green bone-meal sparkles and the bone meal sound. Minecraft carrots have 8 growth ages sharing 4 pictures, so it takes 7 clicks; the hint counts up ("Growing… 4 / 7").
+3. **Harvest:** click when it says "Ready!"; 2–5 carrots drop around the block, as in Minecraft.
+4. **Pick up:** click to collect them (one pop sound per carrot); a counter keeps score and the farmland dries out for the next round.
+
+It works with the keyboard, holding Enter can't skip steps, and a double click right after harvesting can't grab the carrots before they land.
+
+### Problems and fixes
+
+- **Wrong kind of image:** my first `dirt.png` was a rendered 3D block, not a flat texture. Lesson: Minecraft Wiki pages show both, and only the flat texture can go on a block face.
+- **The screenshot tool flattened 3D:** WebKit screenshots showed the block as a single slanted face. The AI switched to a real headless Chromium, which renders CSS 3D properly.
+- **Carrots landed on the block:** they first appeared on the block's front face. They now land in a curve around its base, so they look like they're lying on the ground.
+- **A test mistake, not a site bug:** the first real-mouse test of the pumpkin failed because it pressed a spot that was scrolled off-screen. After scrolling it into view, the pumpkin passed.
+- **Two mini-games, one system:** "September = pumpkin" became a month-to-game list (`HARVEST_GAMES`), so another month's game is one line to add.
+
+### Testing
+
+- Tests now run in a real browser (Playwright with headless Chromium) instead of a simulated one: real clicks, key presses and rendering. 44 checks cover every page, the notes form, the full carrot cycle (including keyboard use) and the pumpkin. All pass, locally and on the live site.
+- The tests live in `tests/` and run with `npm test`.
+
+### What I learned
+
+- Minecraft crops are four flat pictures crossed like a `#`; in CSS that's four planes with `rotateY` and `translateZ`.
+- Not every screenshot method renders CSS 3D; testing needs a real browser engine.
+- Automated tests can be wrong too: a failing test needs checking before blaming the code.
+
+### Next steps
+
+- Card-front contrast ("Spring" 4.3:1, summer 3.1:1).
+- Decide whether tags stay green even though they aren't clickable.
+- Still open: background image and month photos, a smaller favicon, a Lighthouse audit, testing on a real phone.

@@ -1,3 +1,4 @@
 .DS_Store
 # Aristotelica Pro: the free licence forbids sharing the files or using them as webfonts
 font/*.otf
+node_modules/
