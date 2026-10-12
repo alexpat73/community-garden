@@ -130,7 +130,7 @@ function renderHome() {
       </figure>`;
   }).join("");
 
-  if (PUMPKIN_MONTHS.includes(now)) setupPumpkin($("#pumpkin-spot"));
+  HARVEST_GAMES[now]?.($("#harvest-spot"));
   setupForecast();
 }
 
@@ -229,11 +229,11 @@ function renderMonth() {
     <h3>Sow outdoors</h3>${plantList(n, "outdoors")}`;
   $("#plant").innerHTML = `<h2>Plant out</h2>${plantList(n, "plant")}`;
   $("#harvest").innerHTML = `<h2>Harvest</h2>${plantList(n, "harvest")}`;
-  if (PUMPKIN_MONTHS.includes(n)) {
+  if (HARVEST_GAMES[n]) {
     const spot = document.createElement("div");
-    spot.className = "pumpkin-spot";
+    spot.className = "harvest-spot";
     $("#harvest").append(spot);
-    setupPumpkin(spot);
+    HARVEST_GAMES[n](spot);
   }
 
   const notes = loadNotes()
@@ -450,9 +450,11 @@ function renderNotesPage() {
   draw();
 }
 
-// ---------- Minecraft pumpkin (pumpkin season easter egg) ----------
+// ---------- Minecraft harvest mini-games (easter eggs) ----------
 
-const PUMPKIN_MONTHS = [9]; // September; add 10 to show it in October too
+// Which month shows which mini-game, on the home page and on that month's page.
+const HARVEST_GAMES = { 9: setupPumpkin, 10: setupCarrot };
+
 const PUMPKIN_DIR = "images/minecraftPumpkinAnimation";
 const CRACK_IMAGES = Array.from({ length: 10 }, (_, i) => `${PUMPKIN_DIR}/destroy_stage_${i}.png`);
 const DIG_SOUND = "images/Wood_dig3.ogg.mp3";
@@ -469,22 +471,41 @@ function playSound(src, volume = 1) {
   sound.play().catch(() => {}); // the browser may block sound; the animation still works
 }
 
+// Little squares of a texture flying out, like Minecraft block-breaking particles.
+function burstParticles(container, texture, count = 18) {
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("span");
+    piece.className = "mc-particle";
+    piece.style.backgroundImage = `url("${texture}")`;
+    piece.style.backgroundPosition = `${Math.random() * 100}% ${Math.random() * 100}%`;
+    container.append(piece);
+    const dx = (Math.random() - 0.5) * 180;
+    const up = 20 + Math.random() * 50;
+    const down = 50 + Math.random() * 40;
+    piece.animate([
+      { transform: "translate(0, 0)", opacity: 1 },
+      { transform: `translate(${dx * 0.5}px, ${-up}px)`, opacity: 1, offset: 0.35 },
+      { transform: `translate(${dx}px, ${down}px)`, opacity: 0 },
+    ], { duration: 700 + Math.random() * 300, easing: "ease-out" }).onfinish = () => piece.remove();
+  }
+}
+
 function setupPumpkin(spot) {
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
   CRACK_IMAGES.forEach((src) => { new Image().src = src; }); // preload so the cracks don't flicker
 
   spot.innerHTML = `
-    <p class="pumpkin-hint">Pumpkins are ready to harvest! Hold down on the pumpkin to break it.</p>
+    <p class="harvest-hint">Pumpkins are ready to harvest! Hold down on the pumpkin to break it.</p>
     <button type="button" class="mc-stage" aria-label="Pumpkin block: hold to harvest">
       <span class="mc-cube mc-block">${CUBE_FACES}</span>
     </button>
-    <p class="pumpkin-count" aria-live="polite"></p>`;
+    <p class="harvest-count" aria-live="polite"></p>`;
 
   // One button for the whole thing, so keyboard focus never jumps around.
   const button = spot.querySelector(".mc-stage");
   const cube = spot.querySelector(".mc-block");
-  const hint = spot.querySelector(".pumpkin-hint");
-  const count = spot.querySelector(".pumpkin-count");
+  const hint = spot.querySelector(".harvest-hint");
+  const count = spot.querySelector(".harvest-count");
   let state = "block"; // "block" -> "item" -> "picking" -> back to "block"
   let crack = -1;
   let timer = null;
@@ -534,27 +555,9 @@ function setupPumpkin(spot) {
     button.classList.add("broken");
     button.setAttribute("aria-label", "Pick up the pumpkin");
     hint.textContent = "Click the pumpkin to pick it up.";
-    if (!reduceMotion) burstParticles();
+    if (!reduceMotion) burstParticles(button, `${PUMPKIN_DIR}/pumpkin_side.png`);
     dropItem();
     autoPickup = setTimeout(pickUp, 6000);
-  }
-
-  // Little squares of pumpkin texture flying out, like Minecraft block particles.
-  function burstParticles() {
-    for (let i = 0; i < 18; i++) {
-      const piece = document.createElement("span");
-      piece.className = "mc-particle";
-      piece.style.backgroundPosition = `${Math.random() * 100}% ${Math.random() * 100}%`;
-      button.append(piece);
-      const dx = (Math.random() - 0.5) * 180;
-      const up = 20 + Math.random() * 50;
-      const down = 50 + Math.random() * 40;
-      piece.animate([
-        { transform: "translate(0, 0)", opacity: 1 },
-        { transform: `translate(${dx * 0.5}px, ${-up}px)`, opacity: 1, offset: 0.35 },
-        { transform: `translate(${dx}px, ${down}px)`, opacity: 0 },
-      ], { duration: 700 + Math.random() * 300, easing: "ease-out" }).onfinish = () => piece.remove();
-    }
   }
 
   // The dropped item: a small spinning, bobbing pumpkin.
@@ -614,6 +617,199 @@ function setupPumpkin(spot) {
     if (event.key === " " || event.key === "Enter") release();
   });
   button.addEventListener("blur", release);
+}
+
+// ---------- Minecraft carrot (October) ----------
+
+const CARROT_DIR = "images/minecraftCarrotAnimation";
+const CARROT_STAGES = [0, 1, 2, 3].map((i) => `${CARROT_DIR}/carrots_stage_${i}.png`);
+const CARROT_MAX_AGE = 7; // Minecraft carrots grow through 8 ages (0-7) that share 4 pictures
+const CARROT_AGE_TO_STAGE = [0, 0, 1, 1, 2, 2, 2, 3];
+const PLANT_SOUNDS = ["images/Crop_place1.ogg.mp3", "images/Crop_place6.ogg.mp3"];
+const HARVEST_SOUNDS = ["images/Bamboo_Sapling_dig1.ogg.mp3", "images/Bamboo_Sapling_dig4.ogg.mp3"];
+const GROW_SOUND = `${CARROT_DIR}/Bonemeal5.ogg.mp3`; // bone meal, as in Minecraft
+// Optional textures: used automatically as soon as these files are added.
+const CARROT_ITEM = `${CARROT_DIR}/carrot.png`; // the carrot you pick up
+const FARMLAND_SIDE = `${CARROT_DIR}/dirt.png`; // farmland has dirt sides in Minecraft
+// The four crop planes, crossed like a # on top of the block (as in Minecraft).
+const CROP_PLANES = ["a", "b", "c", "d"].map((p) => `<span class="mc-crop mc-crop-${p}"></span>`).join("");
+
+// Stand-in carrot item (my own 16x16 pixel drawing) until carrot.png is added.
+const CARROT_STAND_IN = pixelArt([
+  "................",
+  "...........g..g.",
+  "..........gG.gG.",
+  "...........gGgG.",
+  "..........ooGG..",
+  ".........oooo...",
+  "........oodod...",
+  ".......oooodd...",
+  "......ooodod....",
+  ".....oodood.....",
+  "....oooodd......",
+  "...ooodd........",
+  "...oodd.........",
+  "..odd...........",
+  "..d.............",
+  "................",
+], { o: "#E9892B", d: "#B85E17", g: "#6DC43B", G: "#3B8A22" });
+
+function pixelArt(rows, colors) {
+  const pixels = rows.flatMap((row, y) => [...row].map((c, x) =>
+    colors[c] ? `<rect x="${x}" y="${y}" width="1" height="1" fill="${colors[c]}"/>` : "")).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">${pixels}</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
+
+function setupCarrot(spot) {
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  [...CARROT_STAGES, `${CARROT_DIR}/farmland_wet.png`].forEach((src) => { new Image().src = src; });
+
+  spot.innerHTML = `
+    <p class="harvest-hint">October is carrot harvest time. Click the farmland to plant a carrot.</p>
+    <button type="button" class="mc-stage mc-carrot" aria-label="Farmland: click to plant a carrot">
+      <span class="mc-cube mc-block mc-farmland">${CUBE_FACES}${CROP_PLANES}</span>
+    </button>
+    <p class="harvest-count" aria-live="polite"></p>`;
+
+  // One button for the whole thing, so keyboard focus never jumps around.
+  const button = spot.querySelector(".mc-stage");
+  const cube = spot.querySelector(".mc-farmland");
+  const hint = spot.querySelector(".harvest-hint");
+  const count = spot.querySelector(".harvest-count");
+  let state = "empty"; // "empty" -> "growing" -> "ready" -> "dropped" -> "picking" -> back to "empty"
+  let age = 0;
+  let items = [];
+  let busy = false; // ignore clicks while carrots are still flying out
+  let autoPickup = null;
+  let harvested = 0;
+  let itemSrc = CARROT_STAND_IN;
+
+  // Swap in the real Minecraft textures if they've been added to the folder.
+  const itemProbe = new Image();
+  itemProbe.onload = () => { itemSrc = CARROT_ITEM; };
+  itemProbe.src = CARROT_ITEM;
+  const sideProbe = new Image();
+  sideProbe.onload = () => cube.style.setProperty("--farmland-side", `url("${FARMLAND_SIDE}")`);
+  sideProbe.src = FARMLAND_SIDE;
+
+  function setCrop(newAge) {
+    age = newAge;
+    cube.style.setProperty("--crop", newAge < 0 ? "none" : `url("${CARROT_STAGES[CARROT_AGE_TO_STAGE[newAge]]}")`);
+  }
+
+  function setState(next, label, message) {
+    state = next;
+    button.setAttribute("aria-label", label);
+    hint.textContent = message;
+  }
+
+  button.addEventListener("click", () => {
+    if (busy) return;
+    if (state === "empty") plant();
+    else if (state === "growing") grow();
+    else if (state === "ready") harvest();
+    else if (state === "dropped") pickUp();
+  });
+  // Holding Enter repeats clicks; ignore the repeats so nothing gets skipped by accident.
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.repeat) event.preventDefault();
+  });
+
+  function plant() {
+    setCrop(0);
+    cube.classList.add("wet"); // watered right after sowing
+    playSound(pickRandom(PLANT_SOUNDS));
+    setState("growing", "Carrot seedling: click to help it grow",
+      `Planted and watered! Click to help it grow (0 / ${CARROT_MAX_AGE}).`);
+  }
+
+  function grow() {
+    setCrop(age + 1);
+    playSound(GROW_SOUND, 0.7);
+    if (!reduceMotion) sparkle();
+    if (age < CARROT_MAX_AGE) {
+      hint.textContent = `Growing… ${age} / ${CARROT_MAX_AGE}`;
+      return;
+    }
+    setState("ready", "Carrots are ready: click to harvest", "Ready! Click to harvest the carrots.");
+  }
+
+  // Green sparkles, like bone meal in Minecraft.
+  function sparkle() {
+    for (let i = 0; i < 8; i++) {
+      const dot = document.createElement("span");
+      dot.className = "mc-sparkle";
+      dot.style.left = `${30 + Math.random() * 40}%`;
+      dot.style.top = `${10 + Math.random() * 40}%`;
+      button.append(dot);
+      dot.animate([
+        { transform: "translateY(0) scale(0.4)", opacity: 0 },
+        { transform: "translateY(-6px) scale(1)", opacity: 1, offset: 0.3 },
+        { transform: "translateY(-20px) scale(0.6)", opacity: 0 },
+      ], { duration: 700 + Math.random() * 300, easing: "ease-out" }).onfinish = () => dot.remove();
+    }
+  }
+
+  function harvest() {
+    setCrop(-1);
+    cube.classList.remove("wet");
+    playSound(pickRandom(HARVEST_SOUNDS));
+    if (!reduceMotion) burstParticles(button, CARROT_STAGES[3], 12);
+    const amount = 2 + Math.floor(Math.random() * 4); // 2-5 carrots, like Minecraft
+    for (let i = 0; i < amount; i++) dropCarrot(i, amount);
+    setState("dropped", `Pick up ${amount} carrots`, `You harvested ${amount} carrots! Click to pick them up.`);
+    busy = true;
+    setTimeout(() => { busy = false; }, 500);
+    autoPickup = setTimeout(pickUp, 6000);
+  }
+
+  // A carrot item that pops out of the soil, then spins and bobs on the ground.
+  function dropCarrot(i, amount) {
+    const item = document.createElement("span");
+    item.className = "mc-drop";
+    item.innerHTML = `<span class="mc-bob"><img class="mc-carrot-item" src="${itemSrc}" alt=""></span>`;
+    // Land in a curve around the front of the block, so they look like they're on the ground.
+    const x = (i - (amount - 1) / 2) * 36 + (Math.random() - 0.5) * 8;
+    const y = 125 - Math.abs(x) * 0.35;
+    item.style.setProperty("--x", `${x}px`); // resting spot, used by the CSS
+    item.style.setProperty("--y", `${y}px`);
+    Object.assign(item.dataset, { x, y });
+    button.append(item);
+    items.push(item);
+    if (reduceMotion) return;
+    item.animate([
+      { transform: "translate(0, 0)" },
+      { transform: `translate(${x / 2}px, -40px)`, offset: 0.4 },
+      { transform: `translate(${x}px, ${y}px)` },
+    ], { duration: 500, easing: "ease-in" });
+  }
+
+  function pickUp() {
+    if (state !== "dropped") return;
+    state = "picking";
+    clearTimeout(autoPickup);
+    harvested += items.length;
+    count.textContent = `Carrots harvested: ${harvested}`;
+    items.forEach((_, i) => setTimeout(() => playSound(PICKUP_SOUND, 0.6), i * 80)); // one pop per carrot
+    const done = () => {
+      items.forEach((item) => item.remove());
+      items = [];
+      setState("empty", "Farmland: click to plant a carrot", "Click the farmland to plant another carrot.");
+    };
+    if (reduceMotion) return done();
+    items.forEach((item, i) => {
+      const x = Number(item.dataset.x);
+      const y = Number(item.dataset.y);
+      const fly = item.animate([
+        { transform: `translate(${x}px, ${y}px) scale(1)`, opacity: 1 },
+        { transform: `translate(${x}px, ${y - 60}px) scale(0.3)`, opacity: 0 },
+      ], { duration: 250, delay: i * 80, easing: "ease-in", fill: "forwards" });
+      if (i === items.length - 1) fly.onfinish = done;
+    });
+  }
 }
 
 // ---------- Start ----------

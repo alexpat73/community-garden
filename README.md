@@ -34,4 +34,4 @@ No build step and no install: open `index.html` in a browser. The forecast needs
 - Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
 - Font: [Urbanist](https://github.com/coreyhu/Urbanist) by Corey Hu, SIL Open Font License 1.1.
 - Monthly climate values are approximate long-term averages for central Germany.
-- Minecraft pumpkin textures and sounds © Mojang Studios. Plants vs. Zombies peashooter © PopCap / Electronic Arts. Used for a non-commercial university project; not affiliated with either.
+- Minecraft textures and sounds (pumpkin, carrot) © Mojang Studios. Plants vs. Zombies peashooter © PopCap / Electronic Arts. Used for a non-commercial university project; not affiliated with either.

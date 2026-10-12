@@ -510,10 +510,10 @@ button:focus-visible{
 }
 
 /* ---------- Minecraft pumpkin (September) ---------- */
-.pumpkin-spot{
+.harvest-spot{
     text-align: center;
 }
-.pumpkin-count{
+.harvest-count{
     min-height: 1.2em;
 }
 .mc-stage{ /* the button you hold down */
@@ -626,6 +626,68 @@ button:focus-visible{
     .mc-bob,
     .mc-item .mc-cube,
     .mc-stage.regrow .mc-block{
+        animation: none;
+    }
+}
+
+/* ---------- Minecraft carrot (October) ---------- */
+.mc-stage.mc-carrot{
+    height: 290px; /* room for the crop on top and the carrots in front */
+}
+.mc-carrot .mc-cube{
+    margin-top: 80px;
+}
+.mc-farmland .mc-face{ /* app.js swaps in dirt.png when it's added */
+    background-image: var(--farmland-side, url(images/minecraftCarrotAnimation/grass_side.png));
+}
+.mc-farmland .mc-top,
+.mc-farmland .mc-bottom{
+    background-image: url(images/minecraftCarrotAnimation/farmland_dry.png);
+}
+.mc-farmland.wet .mc-top{
+    background-image: url(images/minecraftCarrotAnimation/farmland_wet.png);
+}
+/* Four crop pictures standing on the block, crossed like a #, as in Minecraft */
+.mc-crop{
+    position: absolute;
+    inset: 0;
+    background: var(--crop, none) center / 100% 100%;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+.mc-crop-a{ transform: translateY(-100%) translateZ(calc(var(--size) / 4)); }
+.mc-crop-b{ transform: translateY(-100%) translateZ(calc(var(--size) / -4)); }
+.mc-crop-c{ transform: translateY(-100%) rotateY(90deg) translateZ(calc(var(--size) / 4)); }
+.mc-crop-d{ transform: translateY(-100%) rotateY(90deg) translateZ(calc(var(--size) / -4)); }
+.mc-sparkle{ /* green plus shapes, like bone meal */
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background-color: #7DF25B;
+    clip-path: polygon(33% 0, 67% 0, 67% 33%, 100% 33%, 100% 67%, 67% 67%, 67% 100%, 33% 100%, 33% 67%, 0 67%, 0 33%, 33% 33%);
+    pointer-events: none;
+}
+.mc-drop{ /* a harvested carrot lying on the ground */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin: -14px 0 0 -14px;
+    transform: translate(var(--x, 0), var(--y, 0));
+    pointer-events: none;
+}
+.mc-carrot-item{
+    display: block;
+    width: 28px;
+    height: 28px;
+    image-rendering: pixelated;
+    animation: mc-item-spin 3s linear infinite;
+}
+@keyframes mc-item-spin{
+    from{ transform: rotateY(0deg); }
+    to{ transform: rotateY(360deg); }
+}
+@media (prefers-reduced-motion: reduce){
+    .mc-carrot-item{
         animation: none;
     }
 }
