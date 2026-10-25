@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find a Garden · Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preload" href="font/urbanist-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+<body data-page="gardens">
+    <h1>FIND A GARDEN</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="month.html">This Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+            <li><a href="gardens.html" aria-current="page">Gardens</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <p class="intro">Community gardens and allotment colonies in Berlin. Find one near you, ask to join its group, or start a group for your own garden and share notes with the people you garden with.</p>
+
+    <div class="community-page">
+        <aside class="prototype-banner">
+            <p><strong>Prototype:</strong> groups, members and notes are examples or saved only in this browser. Nothing is sent anywhere.</p>
+            <button type="button" class="button-secondary small-button" id="reset-prototype">Reset prototype data</button>
+        </aside>
+        <p class="form-status" id="community-status" role="status"></p>
+
+        <section class="group-box" id="my-groups-box" hidden>
+            <h2>Your groups</h2>
+            <div id="my-groups"></div>
+        </section>
+
+        <div class="gardens-layout">
+            <section aria-labelledby="results-heading">
+                <h2 id="results-heading">All gardens</h2>
+                <div class="garden-filters">
+                    <div class="field">
+                        <label for="garden-search">Search</label>
+                        <input type="search" id="garden-search" placeholder="Name, district or postcode">
+                    </div>
+                    <div class="field">
+                        <label for="garden-district">District</label>
+                        <select id="garden-district"><option value="">All districts</option></select>
+                    </div>
+                    <div class="field">
+                        <label for="garden-type">Type</label>
+                        <select id="garden-type">
+                            <option value="all">All gardens</option>
+                            <option value="c">Community gardens</option>
+                            <option value="a">Allotment colonies</option>
+                            <option value="group">With a group</option>
+                            <option value="example">Example groups</option>
+                        </select>
+                    </div>
+                    <button type="button" id="near-me">Near me</button>
+                </div>
+                <p class="form-status" id="near-status" role="status"></p>
+                <p class="garden-count" id="garden-count" aria-live="polite"></p>
+                <ul class="garden-results" id="garden-results"></ul>
+                <button type="button" class="button-secondary" id="show-more" hidden>Show more</button>
+            </section>
+
+            <!-- The map loads only on request: until then, no request goes to the map server -->
+            <section class="map-panel" aria-label="Map">
+                <div class="map-placeholder" id="map-placeholder">
+                    <p>See the gardens on a street map.</p>
+                    <button type="button" id="show-map">Show map</button>
+                    <p class="small">Loads map pictures from OpenStreetMap. Their server only sees your visit once you click.</p>
+                </div>
+                <div id="map" hidden></div>
+                <p class="map-legend small" id="map-legend" hidden>
+                    <span class="dot dot-community"></span> Community garden
+                    <span class="dot dot-allotment"></span> Allotment colony
+                </p>
+            </section>
+        </div>
+
+        <p class="small credit">Garden data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL).</p>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="gardens-data.js"></script>
+    <script src="community-demo.js"></script>
+    <script src="app.js"></script>
+    <script src="community.js"></script>
+</body>
+</html>

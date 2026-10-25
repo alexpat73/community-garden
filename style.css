@@ -95,7 +95,7 @@ a{
     text-align: center;
     border-radius: 8px;
 }
-.navbar a[aria-current="page"]{
+.navbar a[aria-current]{ /* current page, or the section a subpage belongs to */
     color: var(--accent);
 }
 /* Lighter green tab on hover. Comes after the rule above so the current page
@@ -346,7 +346,7 @@ a:focus-visible .thecard{
 }
 
 /* ---------- Form fields: every field looks the same ---------- */
-input:not([type="file"]),
+input:not([type="file"], [type="radio"], [type="checkbox"]),
 select,
 textarea{
     font: inherit;
@@ -365,7 +365,7 @@ select{ /* own arrow, so the dropdown matches the other fields in every browser 
     background-position: right 12px center;
     cursor: pointer;
 }
-input:not([type="file"]):focus-visible,
+input:not([type="file"], [type="radio"], [type="checkbox"]):focus-visible,
 select:focus-visible,
 textarea:focus-visible{
     outline: 2px solid var(--link);
@@ -388,7 +388,7 @@ textarea:focus-visible{
     margin-bottom: 4px;
     font-weight: 600;
 }
-.note-form input,
+.note-form input:not([type="file"], [type="radio"], [type="checkbox"]),
 .note-form select,
 .note-form textarea{
     display: block;
@@ -396,7 +396,7 @@ textarea:focus-visible{
     box-sizing: border-box;
     min-height: 46px;
 }
-.note-form input,
+.note-form input:not([type="file"], [type="radio"], [type="checkbox"]),
 .note-form select{
     height: 46px; /* Safari draws date fields taller otherwise */
 }
@@ -689,6 +689,300 @@ button:focus-visible{
 @media (prefers-reduced-motion: reduce){
     .mc-carrot-item{
         animation: none;
+    }
+}
+
+/* ---------- Gardens and groups ---------- */
+[hidden]{ /* our own display rules (e.g. on buttons) would otherwise beat the hidden attribute */
+    display: none !important;
+}
+input[type="radio"],
+input[type="checkbox"]{
+    accent-color: var(--link);
+}
+.community-page{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+.prototype-banner{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    border: 1px dashed var(--accent);
+    border-radius: 15px;
+    padding: 8px 16px;
+    margin-bottom: 16px;
+}
+.prototype-banner p{
+    margin: 0;
+}
+.button-secondary{ /* outlined: for actions less important than the main green button */
+    background: none;
+    color: var(--link);
+    border: 1px solid var(--link);
+}
+button.button-secondary:hover{
+    background-color: rgba(143, 179, 122, 0.15);
+}
+.small-button{
+    padding: 4px 10px;
+    font-size: 0.85em;
+}
+.group-box{
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    padding: 0 24px 16px;
+    margin-bottom: 24px;
+}
+.group-box > h2:first-child{
+    margin-top: 16px;
+}
+.group-meta,
+.garden-count{
+    opacity: 0.75;
+}
+.group-box > p,
+.group-box > h3,
+.group-box > .note-form,
+.group-box > .note-feed{ /* the same 65ch line length as the rest of the site */
+    max-width: 65ch;
+}
+.my-groups{
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+}
+
+/* Find a garden: list on the left, map on the right */
+.gardens-layout{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 32px;
+    align-items: start;
+}
+.garden-filters{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 16px;
+    align-items: end;
+}
+.garden-filters .field{
+    margin-bottom: 12px;
+}
+.garden-filters .field:first-child{
+    grid-column: 1 / -1;
+}
+.garden-filters label{
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+.garden-filters input,
+.garden-filters select,
+#near-me{
+    width: 100%;
+    box-sizing: border-box;
+    height: 46px;
+}
+#near-me{
+    margin-bottom: 12px;
+}
+.garden-results{
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+}
+.garden-card{
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+}
+.garden-name{
+    font-weight: 600;
+    font-size: 1.1em;
+}
+.garden-meta,
+.garden-tags{
+    margin: 4px 0;
+}
+.garden-tags .tag{
+    margin-right: 6px;
+}
+.map-panel{
+    position: sticky;
+    top: 16px;
+    height: min(720px, calc(100vh - 32px));
+    display: flex;
+    flex-direction: column;
+}
+.map-placeholder{
+    flex: 1;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    text-align: center;
+    border: 1px dashed var(--line);
+    border-radius: 15px;
+    padding: 24px;
+}
+#map{
+    flex: 1;
+    border-radius: 15px;
+}
+#map.leaflet-container{
+    font-family: inherit;
+}
+#map .leaflet-popup-content{ /* popups are white, so use dark text there */
+    color: #1F271D;
+}
+#map .leaflet-popup-content a{
+    color: #2E6B1F;
+    font-weight: 600;
+}
+.map-legend{
+    margin: 8px 0 0;
+}
+.dot{
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--text);
+    margin: 0 4px 0 12px;
+    vertical-align: middle;
+}
+.dot-community{ background-color: #2E7D32; }
+.dot-allotment{ background-color: #A0521D; }
+.credit{
+    margin-top: 24px;
+}
+
+/* One garden and its group */
+.group-columns{
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+.note-feed,
+.member-list,
+.request-list{
+    list-style: none;
+    padding: 0;
+}
+.note-card,
+.request-card{
+    border-top: 1px solid var(--line);
+    padding: 12px 0;
+}
+.note-head{
+    margin: 0 0 4px;
+}
+.note-head .tag{
+    margin-left: 6px;
+}
+.note-body{
+    margin: 4px 0;
+    white-space: pre-line;
+}
+.note-photo{
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+.hidden-notes{
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+.request-status{
+    color: var(--accent);
+}
+.request-card button{
+    margin-right: 8px;
+}
+.member-card{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+.avatar{
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: grid;
+    place-items: center;
+    background-color: var(--field);
+    color: var(--accent);
+    font-weight: 600;
+    border: 1px solid var(--line);
+}
+.choice{
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px 12px;
+    margin: 0 0 16px;
+}
+.choice legend{
+    font-weight: 600;
+    padding: 0 4px;
+}
+.note-form .choice label{ /* radio buttons and checkboxes sit inline, unlike the field labels */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 16px 0 0;
+    font-weight: 400;
+}
+.plant-picker{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+input[type="file"]::file-selector-button{ /* same look as the outlined buttons */
+    font: inherit;
+    font-weight: 600;
+    color: var(--link);
+    background: none;
+    border: 1px solid var(--link);
+    border-radius: 15px;
+    padding: 6px 12px;
+    margin-right: 12px;
+    cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover{
+    background-color: rgba(143, 179, 122, 0.15);
+}
+.flash{
+    margin: 16px 0 0;
+    font-weight: 600;
+}
+.flash:empty{
+    display: none;
+}
+.photo-preview img{
+    display: block;
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+@media (max-width: 900px){
+    .gardens-layout,
+    .group-columns{
+        grid-template-columns: 1fr;
+    }
+    .map-panel{
+        position: static;
+        height: 420px;
     }
 }
 

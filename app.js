@@ -321,6 +321,47 @@ function plantDetails(p) {
     </section>`;
 }
 
+// ---------- Form helpers (notes page and garden groups) ----------
+
+// A status line under a form, in the error colour when isError is true.
+function showStatus(el, message, isError = false) {
+  el.textContent = message;
+  el.classList.toggle("is-error", isError);
+}
+
+// Every field with a data-error message is required. The returned check() marks each empty
+// field (coral border + its message underneath), focuses the first one and returns how many are empty.
+function requiredFieldsChecker(form) {
+  const fields = [...form.querySelectorAll("[data-error]")];
+  const showError = (field, show) => {
+    field.setAttribute("aria-invalid", String(show));
+    form.querySelector(`#${field.id}-error`).textContent = show ? field.dataset.error : "";
+  };
+  fields.forEach((field) => field.addEventListener("input", () => {
+    if (field.value.trim()) showError(field, false);
+  }));
+  return () => {
+    const missing = fields.filter((field) => !field.value.trim());
+    fields.forEach((field) => showError(field, missing.includes(field)));
+    missing[0]?.focus();
+    return missing.length;
+  };
+}
+
+const emptyFieldsMessage = (count) => (count === 1 ? "One field is still empty." : `${count} fields are still empty.`);
+
+// Live "45 / 1000 characters" counter, so people see a field's limit coming. Returns update().
+function charCounter(field, counter) {
+  const update = () => {
+    const used = field.value.length;
+    const max = field.maxLength;
+    counter.textContent = `${used} / ${max} characters${used >= max ? ": limit reached" : ""}`;
+    counter.classList.toggle("near", used >= max * 0.9);
+  };
+  field.addEventListener("input", update);
+  return update;
+}
+
 // ---------- Notes page ----------
 
 function renderNotesPage() {
@@ -343,10 +384,7 @@ function renderNotesPage() {
       : '<li class="empty">No notes yet. Your first one goes above.</li>';
   }
 
-  function setStatus(message, isError = false) {
-    status.textContent = message;
-    status.classList.toggle("is-error", isError);
-  }
+  const setStatus = (message, isError) => showStatus(status, message, isError);
 
   // Returns false (and says so) when the browser blocks storage.
   function persist() {
@@ -355,35 +393,15 @@ function renderNotesPage() {
     return false;
   }
 
-  // Every field with a data-error message is required.
-  const requiredFields = [...form.querySelectorAll("[data-error]")];
-
-  function showError(field, show) {
-    field.setAttribute("aria-invalid", String(show));
-    $(`#${field.id}-error`).textContent = show ? field.dataset.error : "";
-  }
-  requiredFields.forEach((field) => field.addEventListener("input", () => {
-    if (field.value.trim()) showError(field, false);
-  }));
-
-  // Live character counter, so people see the 1000-character limit coming.
+  const checkRequired = requiredFieldsChecker(form);
   const noteText = form.elements.text;
-  const counter = $("#note-text-count");
-  function updateCounter() {
-    const used = noteText.value.length;
-    const max = noteText.maxLength;
-    counter.textContent = `${used} / ${max} characters${used >= max ? ": limit reached" : ""}`;
-    counter.classList.toggle("near", used >= max * 0.9);
-  }
-  noteText.addEventListener("input", updateCounter);
+  const updateCounter = charCounter(noteText, $("#note-text-count"));
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const missing = requiredFields.filter((field) => !field.value.trim());
-    requiredFields.forEach((field) => showError(field, missing.includes(field)));
-    if (missing.length) {
-      missing[0].focus();
-      setStatus(missing.length === 1 ? "One field is still empty." : `${missing.length} fields are still empty.`, true);
+    const empty = checkRequired();
+    if (empty) {
+      setStatus(emptyFieldsMessage(empty), true);
       return;
     }
     notes.push({

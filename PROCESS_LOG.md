@@ -201,3 +201,95 @@ It works with the keyboard, holding Enter can't skip steps, and a double click r
 - Card-front contrast ("Spring" 4.3:1, summer 3.1:1).
 - Decide whether tags stay green even though they aren't clickable.
 - Still open: background image and month photos, a smaller favicon, a Lighthouse audit, testing on a real phone.
+
+
+---
+
+## Entry 4 · 18–25 October 2026 · Research and the "Gardens" prototype
+
+### Session goal
+
+Do primary and secondary research on who would use the site, then act on it: let people find gardens near them in Berlin and share notes with the people they garden with.
+
+### Research
+
+- **Interviews (primary):** the AI drafted an interview guide with 27 open questions in 8 themes, plus tips (ask about real past events, don't show the site first, stay neutral). I picked my own 6. The AI suggested adding one on how people keep track of what they planted, since that's the core of the brief, and rewording "Where would you like to see improvement in the garden?" so it's about their gardening rather than the physical garden.
+- **Secondary research (my notes on the sources):**
+  - [berlin.de/gaertnern](https://www.berlin.de/gaertnern/) is a better *guide* than my site, but it has **no community notes for other people to see**. That's where my site can stand out.
+  - Community gardens are about learning from and helping one another, and neighbours who never talk end up chatting ([berlin.de community gardens](https://www.berlin.de/en/urban-gardening/community-gardens/)).
+  - Shared spaces mean shared decisions ([10 tips for community gardeners](https://mynortherngarden.com/2024/10/24/10-tips-for-community-gardeners/)).
+  - Examples: Allmende-Kontor's workshops and self-built raised beds ([visitBerlin](https://www.visitberlin.de/en/urban-gardening-berlin)), a 900 m² community garden on a car park roof in Schöneberg ([rbb](https://www.ardmediathek.de/video/der-tag-in-berlin-und-brandenburg/urban-gardening-auf-dem-parkhausdach-in-schoeneberg/rbb/Y3JpZDovL3JiYl81NTIyMWVkOC0yYTFiLTRmYjItODg4NS1iZDczNDJjMjFkOTlfcHVibGljYXRpb24)), school gardening programmes ([DW](https://www.dw.com/en/urban-gardening-in-berlin/video-64032753)), an app to adopt and water street trees ([imagine5](https://imagine5.com/articles/the-urban-gardeners-of-berlin/)), and the relaunched "Berlin gärtnert" platform ([gruppe F](https://gruppef.com/en/berlin-gartnert-relaunch-of-the-community-garden-platform/)).
+
+### How the session went
+
+| # | What I asked the AI (summarised) | What the AI did | What I decided or changed |
+|---|---|---|---|
+| 1 | Open interview questions to understand the general user. | Wrote a 27-question guide with tips; later reviewed my selection. | Chose my 6 questions. |
+| 2 | From my research: a way to search for nearby gardens in Berlin, a contact form to join other garden communities and read their notes, and private groups for your own garden that others must ask to join. Members add their name, what they grow, optional photos and notes. Desktop first, mobile later. | Checked OpenStreetMap had real data (yes), wrote a plan, and asked me three decisions. | **Prototype** (runs in the browser, no accounts), **each note chooses** public or members only, and **list + map on request**. |
+| 3 | People will snap a photo on their phone and upload it, so iPhone HEIC photos must work. | Compared the two open-source HEIC converters and picked the maintained one (heic-to). It loads only when someone actually picks a HEIC photo. | Approved the plan with this added. |
+| 4 | Build it. | Built and tested it (see below). | — |
+
+### What the "Gardens" part does
+
+- **Find a garden:** 975 real community gardens and allotment colonies in Berlin from OpenStreetMap, plus 3 made-up example groups.
+  - Search by name, district or postcode (accents don't matter: "kopenick" finds Köpenick), and filter by type.
+  - **Near me** sorts by distance; the location never leaves the device.
+  - A **street map** loads only when you click "Show map".
+- **A garden's page:** type, district, website and an OpenStreetMap link. With a group, visitors see the **public notes**, a line saying how many members-only notes are hidden, and an **Ask to join** form.
+- **Joining:** the request shows as pending, and a pretend admin accepts it after 4 seconds. Then the members-only notes appear.
+- **As a member:**
+  - post notes (up to 1000 characters) as members only (the default) or public, with an optional photo, or share an entry from My Notes
+  - see the members and what they grow
+  - edit your profile (name, plants from a checklist, photo), or leave the group
+- **Your own group:** start one for any real garden. Two example join requests arrive to approve or decline, and you can delete the group.
+
+### Design decisions and why
+
+- **Real gardens, made-up groups:** inventing members or notes for a real garden would misrepresent a real place, so the example groups use fictional gardens marked "(example)". Every group page says it's "run by its members, not an official page of this garden".
+- **Honest about being a prototype:** a banner on every Gardens page, and a "Reset prototype data" button for interviews and test sessions.
+- **Privacy by default:**
+  - the map loads only on a click (a common pattern on German sites)
+  - your location is used only on your device
+  - photos lose all EXIF data, including the **GPS location** a phone photo carries
+- **Consistency (heuristic #4):** the notes form's checks were turned into shared helpers, so every form on the site shows empty fields, messages and character counters the same way.
+- **Visibility of system status (heuristic #1):** confirmations appear next to the form you used, and "Converting iPhone photo…" shows while a HEIC converts.
+
+### Problems and fixes
+
+- **Messy map data:** some "gardens" in OpenStreetMap are single plots or beds, like "27", "hdr 1" to "hdr 24" and "Clusterkern 1" to "11". The download script filters them out.
+- **The OpenStreetMap server was busy:** it answered "406" without a proper User-Agent and "502 at capacity" at busy times. The script now identifies itself with the repo URL and retries with growing waits, and the garden list is saved into the site, never fetched live by visitors.
+- **A privacy slip:** during research, the AI put my email address in a request to the OpenStreetMap server. It pointed this out itself and used the repo URL from then on.
+- **Form styles hit the wrong elements:** the text-field style also applied to radio buttons, checkboxes and file pickers, so it was narrowed to text-like fields.
+- **The `hidden` attribute was ignored on buttons,** because their own `display` rule beat it. A global `[hidden]` rule fixed it.
+- **The empty "Your groups" box pushed the search below the fold;** it now only shows once you're in a group.
+- **Messages appeared at the top of the page, far from the button.** They're now next to the form.
+- **Small things:** the browser's grey "Choose File" button was restyled to match, and "1 members" now reads "1 member".
+- **Licences:** heic-to is LGPL-3.0, so it's included unmodified with its licence. The garden list is ODbL, with credit on the page.
+
+### Testing
+
+- 56 new browser checks, **100 in total, all passing.** They use real test photos:
+  - a sideways phone-style JPG with GPS data (comes out upright with no EXIF left)
+  - a HEIC file made with macOS `sips` (converts upright; the converter downloads once, only then)
+  - a broken file (gets a plain-language error)
+- A fake clock skips the 4-second approval wait, a fake location tests "Near me", and fake map tiles keep the tests off OpenStreetMap's servers.
+- Screenshots in Chromium at desktop width (1280px) and phone width (390px). There's no sideways scrolling on phones, though the real mobile version comes later.
+
+### Web optimization notes
+
+- Garden list: 23 KB compressed, loaded only on the Gardens pages.
+- Leaflet (148 KB) loads only after "Show map"; the HEIC converter (about 775 KB compressed) only when a HEIC photo is picked. Most visitors download neither.
+- Photos are shrunk to at most 640 px (about 60 KB each).
+
+### What I learned
+
+- OpenStreetMap data can be queried with the Overpass API, but it's shared and often busy, so a saved snapshot is faster and more reliable. It also comes with a licence (ODbL) that needs credit.
+- Heavy libraries can be loaded only at the moment they're needed.
+- Phone photos can contain the exact GPS location they were taken at; re-drawing them on a canvas removes it.
+- A prototype is much quicker to build and test with people. A real version would need accounts, moderation and a privacy policy.
+
+### Next steps
+
+- Run the interviews, then test the prototype with some interviewees (Reset between sessions).
+- Mobile version.
+- Still open: card-front contrast, whether tags stay green, background image and month photos, a smaller favicon, a Lighthouse audit.

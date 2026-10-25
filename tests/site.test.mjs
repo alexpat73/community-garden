@@ -1,4 +1,4 @@
-// Browser tests for every page, the notes form and both harvest mini-games.
+// Browser tests for every page, the notes form, both harvest mini-games and the garden groups.
 //
 //   npm install                                  (once)
 //   npx playwright install chromium-headless-shell (once)
@@ -34,8 +34,10 @@ let failures = 0;
 const check = (ok, msg) => { console.log(`${ok ? "PASS" : "FAIL"}  ${msg}`); if (!ok) failures++; };
 const browser = await chromium.launch();
 
-async function open(path) {
-  const page = await browser.newPage({ viewport: { width: 1000, height: 900 } });
+// context: browser options (e.g. a fake location); before: setup that must happen before the page loads (e.g. a fake clock).
+async function open(path, { context = {}, before } = {}) {
+  const ctx = await browser.newContext({ viewport: { width: 1000, height: 900 }, ...context });
+  const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("response", (r) => { if (r.status() >= 400 && !/favicon/.test(r.url())) errors.push(`${r.status()} ${r.url()}`); });
@@ -44,13 +46,15 @@ async function open(path) {
     window.__plays = [];
     HTMLMediaElement.prototype.play = function () { window.__plays.push([this.src.split("/").pop(), this.volume]); return Promise.resolve(); };
   });
+  if (before) await before(page, ctx);
   await page.goto(BASE + path);
-  return { page, errors, plays: () => page.evaluate(() => window.__plays.splice(0)) };
+  return { page, ctx, errors, plays: () => page.evaluate(() => window.__plays.splice(0)) };
 }
 const cropOf = (page) => page.evaluate(() => getComputedStyle(document.querySelector(".mc-farmland")).getPropertyValue("--crop").trim());
 
 // ---------- every page loads cleanly ----------
-for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "notes.html"]) {
+for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "notes.html", "gardens.html",
+  "garden.html?id=demo-wedding", "garden.html?id=w332251381", "garden.html?id=does-not-exist"]) {
   const { page, errors } = await open(p);
   await page.waitForTimeout(400);
   check(errors.length === 0, `${p}: no errors ${errors.join(" | ")}`);
@@ -64,7 +68,7 @@ for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "n
   const month = new Date().getMonth() + 1;
   check(await page.locator("#harvest-spot .mc-carrot").count() === (month === 10 ? 1 : 0), "home: carrot shown only in October");
   check(await page.locator("#harvest-spot .mc-stage:not(.mc-carrot)").count() === (month === 9 ? 1 : 0), "home: pumpkin shown only in September");
-  check(await page.locator("#faq details").count() === 9, "home: 9 FAQ questions");
+  check(await page.locator("#faq details").count() === 10, "home: 10 FAQ questions");
   await page.close();
 }
 
@@ -166,6 +170,185 @@ for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "n
   await page.click("#note-form button[type=submit]");
   check((await page.locator("#notes-status").textContent()) === "Note saved." && await page.locator("#notes-list li .delete").count() === 1, "notes: complete form saves");
   await page.close();
+}
+
+// ---------- Gardens: search, filters, near me, map only on request ----------
+const TINY_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+{
+  const loaded = [];
+  const { page, ctx } = await open("gardens.html", {
+    context: { geolocation: { latitude: 52.4986, longitude: 13.403 }, permissions: ["geolocation"] }, // Kreuzberg
+    before: async (page, ctx) => {
+      page.on("request", (r) => loaded.push(r.url()));
+      // never hit the real map server from the tests
+      await ctx.route("https://tile.openstreetmap.org/**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: TINY_PNG }));
+    },
+  });
+  const total = Number((await page.textContent("#garden-count")).match(/of (\d+)/)?.[1]);
+  check(total > 900 && await page.locator(".garden-card").count() === 30, `gardens: ${total} gardens, 30 shown at first`);
+  await page.click("#show-more");
+  check(await page.locator(".garden-card").count() === 60, "gardens: Show more adds 30");
+
+  await page.fill("#garden-search", "allmende");
+  await page.waitForTimeout(300);
+  check(await page.locator(".garden-card a", { hasText: "Allmende-Kontor" }).count() === 1, "search finds Allmende-Kontor");
+  await page.fill("#garden-search", "kopenick"); // typed without the umlaut
+  await page.waitForTimeout(300);
+  const metas = await page.locator(".garden-meta").allTextContents();
+  check(metas.length > 0 && metas.every((m) => m.includes("Treptow-Köpenick")), "search ignores accents (kopenick finds Köpenick)");
+  await page.fill("#garden-search", "");
+  await page.selectOption("#garden-district", "Neukölln");
+  await page.selectOption("#garden-type", "c");
+  await page.waitForTimeout(300);
+  const neukolln = await page.locator(".garden-meta").allTextContents();
+  check(neukolln.length > 0 && neukolln.every((m) => m.startsWith("Community garden · Neukölln")), `district + type filters (${neukolln.length} community gardens in Neukölln)`);
+  await page.selectOption("#garden-district", "");
+  await page.selectOption("#garden-type", "example");
+  check(await page.locator(".garden-card").count() === 3, "type filter: 3 example groups");
+  await page.selectOption("#garden-type", "all");
+
+  await page.click("#near-me");
+  await page.waitForFunction(() => /Nearest/.test(document.querySelector("#near-status").textContent));
+  const km = (await page.locator(".garden-meta").allTextContents()).slice(0, 8).map((m) => {
+    const [, n, unit] = m.match(/([\d.]+) (m|km)$/);
+    return unit === "m" ? n / 1000 : Number(n);
+  });
+  check(km.every((d, i) => i === 0 || d >= km[i - 1]) && km[0] < 2, `near me: nearest first (${km.slice(0, 3).join(", ")} km)`);
+  check((await page.textContent("#near-status")).includes("never leaves this device"), "near me: says the location stays on the device");
+
+  check(!loaded.some((u) => /leaflet|tile\.openstreetmap/.test(u)), "nothing from the map is downloaded before Show map");
+  await page.click("#show-map");
+  await page.waitForSelector("#map.leaflet-container");
+  await page.waitForTimeout(500);
+  check(loaded.some((u) => u.endsWith("vendor/leaflet/leaflet.js")) && loaded.some((u) => /tile\.openstreetmap/.test(u)), "Show map loads Leaflet and the map tiles");
+  check(await page.locator("#map canvas").count() > 0 && await page.locator("#map-placeholder").isHidden(), "map shows the garden markers");
+  check(await page.locator("[data-fly]").count() > 0, "results get a Show on map button");
+  check(!loaded.some((u) => u.includes("heic-to")), "the HEIC converter isn't downloaded on the gardens page");
+  await ctx.close();
+}
+
+// ---------- A group: visitor, join request, member, notes and photos ----------
+const FIXTURES = join(ROOT, "tests/fixtures");
+// Reads a photo back from the page: its size, whether it's upright (red top, blue bottom) and whether EXIF is left.
+const photoInfo = (page, selector) => page.$eval(selector, (img) => new Promise((resolve) => {
+  const measure = () => {
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const g = c.getContext("2d");
+    g.drawImage(img, 0, 0);
+    const top = g.getImageData(c.width / 2, 5, 1, 1).data;
+    const bottom = g.getImageData(c.width / 2, c.height - 5, 1, 1).data;
+    resolve({ w: c.width, h: c.height, jpeg: img.src.startsWith("data:image/jpeg"), exif: atob(img.src.split(",")[1]).includes("Exif"),
+      upright: top[0] > 150 && top[2] < 100 && bottom[2] > 150 && bottom[0] < 100 });
+  };
+  if (img.complete) measure(); else img.onload = measure;
+}));
+{
+  const loaded = [];
+  const { page, ctx } = await open("garden.html?id=demo-wedding", {
+    before: async (page) => {
+      await page.clock.install(); // lets the test skip the pretend admin's 4-second wait
+      page.on("request", (r) => loaded.push(r.url()));
+      page.on("dialog", (d) => d.accept());
+      await page.addInitScript(() => { // one entry in the personal diary, to share with the group
+        if (!localStorage.getItem("garden-notes")) {
+          localStorage.setItem("garden-notes", JSON.stringify([{ id: "n1", date: "2026-10-20", kind: "Harvested", plant: "Kale", text: "First kale after the frost" }]));
+        }
+      });
+    },
+  });
+  check(await page.locator(".note-card").count() === 3, "visitor sees the 3 public notes");
+  check(await page.locator(".note-card .tag", { hasText: "Members only" }).count() === 0, "visitor sees no members-only note");
+  check((await page.textContent(".hidden-notes")).startsWith("2 members-only notes are hidden"), "visitor is told 2 members-only notes are hidden");
+  await page.click("#join-form button[type=submit]");
+  check((await page.textContent("#join-status")) === "3 fields are still empty." && await page.locator('#join-form [aria-invalid="true"]').count() === 3, "join form: empty fields are blocked with messages");
+  await page.fill("#join-name", "Alex");
+  await page.fill("#join-message", "Hi! I just got a plot nearby and would love to learn.");
+  await page.fill("#join-growing", "Tomatoes and basil");
+  await page.click("#join-form button[type=submit]");
+  check((await page.textContent(".request-status")).includes("waiting for approval"), "join: request is pending");
+  await page.clock.runFor(5000);
+  await page.waitForSelector("#note-post");
+  check((await page.textContent("#group-flash")).includes("Anna accepted your request"), "join: the pretend admin accepts after a few seconds");
+  check(await page.locator(".note-card .tag", { hasText: "Members only" }).count() === 2, "member: the 2 members-only notes appear");
+  check(/Alex[\s\S]*Tomato, Basil/.test(await page.locator(".member-card", { hasText: "(you)" }).textContent()), "member: you're listed, growing what you asked for");
+
+  await page.selectOption("#post-share", "n1");
+  check((await page.inputValue("#post-text")).startsWith("20 Oct 2026 · Harvested · Kale: First kale"), "Share one of My Notes fills in the note");
+  await page.setInputFiles("#post-photo", join(FIXTURES, "portrait-exif-gps.jpg"));
+  await page.waitForFunction(() => document.querySelector("#post-photo-status").textContent === "Photo ready.");
+  const jpg = await photoInfo(page, "#post-preview img");
+  check(jpg.jpeg && jpg.w === 300 && jpg.h === 400 && jpg.upright, `JPG photo: turned upright using its EXIF rotation (${jpg.w}×${jpg.h})`);
+  check(!jpg.exif, "JPG photo: EXIF data, including the GPS location, is removed");
+  check(!loaded.some((u) => u.includes("heic-to")), "JPG photo: the HEIC converter is not downloaded");
+  await page.check('input[name="visibility"][value="public"]');
+  await page.click("#post-submit");
+  check((await page.textContent("#post-status")) === "Note posted. Everyone can read it.", "post: confirmation appears next to the form");
+  check(await page.locator(".note-card .note-photo").count() === 1, "post: the note shows its photo");
+
+  await page.evaluate(() => { // remember every status the photo field shows, even short ones
+    window.__photoStatus = [];
+    new MutationObserver(() => window.__photoStatus.push(document.querySelector("#post-photo-status")?.textContent))
+      .observe(document.querySelector("#garden-main"), { subtree: true, childList: true, characterData: true });
+  });
+  await page.setInputFiles("#post-photo", join(FIXTURES, "iphone.heic"));
+  await page.waitForFunction(() => document.querySelector("#post-photo-status").textContent === "Photo ready.", null, { timeout: 20000 });
+  check((await page.evaluate(() => window.__photoStatus)).includes("Converting iPhone photo…"), "HEIC photo: says it's converting");
+  const heic = await photoInfo(page, "#post-preview img");
+  check(heic.jpeg && heic.w === 300 && heic.h === 400 && heic.upright, `HEIC photo: converted to an upright JPEG (${heic.w}×${heic.h})`);
+  check(loaded.filter((u) => u.includes("heic-to.js")).length === 1, "HEIC photo: the converter is downloaded once, only now");
+  await page.fill("#post-text", "The gate code changed, ask Anna.");
+  await page.click("#post-submit"); // visibility is back to the default: members only
+  check((await page.textContent("#post-status")) === "Note posted. Only members can read it.", "members-only is the default");
+
+  await page.setInputFiles("#post-photo", join(FIXTURES, "broken.jpg"));
+  await page.waitForFunction(() => document.querySelector("#post-photo-status").classList.contains("is-error"));
+  check((await page.textContent("#post-photo-status")) === "This photo couldn't be read. Try a JPG or PNG." && await page.locator("#post-preview img").count() === 0, "broken photo: plain-language error, nothing attached");
+
+  await page.reload();
+  check(await page.locator("#note-post").count() === 1 && await page.locator(".note-card").count() === 7, "reload: still a member, all 7 notes kept");
+  await page.click("#leave-group");
+  check((await page.textContent("#group-flash")).startsWith("You left Sonnenbeet Wedding"), "leave: confirmation shown");
+  const visible = await page.locator(".note-card .note-body").allTextContents();
+  check(visible.some((t) => t.startsWith("20 Oct 2026 · Harvested · Kale")) && !visible.some((t) => t.includes("gate code")), "after leaving: your public note shows, your members-only note doesn't");
+  check((await page.textContent(".hidden-notes")).startsWith("3 members-only notes are hidden"), "after leaving: 3 members-only notes hidden");
+  await Promise.all([page.waitForEvent("load"), page.click("#reset-prototype")]);
+  await page.waitForSelector("#join-form");
+  check(await page.locator(".note-card").count() === 3, "reset: back to the example data");
+  await ctx.close();
+}
+
+// ---------- Your own group: start it, answer requests, delete it ----------
+{
+  const { page, ctx } = await open("garden.html?id=w332251381", { before: (page) => page.on("dialog", (d) => d.accept()) });
+  await page.click("#start-form button[type=submit]");
+  check((await page.textContent("#start-status")) === "2 fields are still empty.", "start a group: empty fields are blocked");
+  await page.fill("#start-name", "Alex");
+  await page.fill("#start-about", "Beds 40 to 44 on Tempelhofer Feld. We meet Sundays at 11.");
+  await page.click("#start-form button[type=submit]");
+  check((await page.textContent("#group-flash")).startsWith("Your group is ready"), "start a group: confirmation");
+  check(await page.locator(".request-card").count() === 2, "owner: 2 example join requests arrive");
+  await page.locator(".request-card", { hasText: "Yusuf" }).locator("[data-approve]").click();
+  check((await page.textContent("#requests-status")).startsWith("Yusuf is now a member"), "owner: approving says so next to the requests");
+  check(await page.locator(".member-card", { hasText: "Yusuf" }).count() === 1, "owner: Yusuf joins the members");
+  await page.locator(".request-card", { hasText: "Clara" }).locator("[data-decline]").click();
+  check(await page.locator(".request-card").count() === 0 && await page.locator(".member-card").count() === 2, "owner: declining removes the request");
+  await page.check('.plant-picker input[value="carrot"]');
+  await page.setInputFiles("#profile-photo", join(FIXTURES, "portrait-exif-gps.jpg"));
+  await page.waitForFunction(() => document.querySelector("#profile-photo-status").textContent === "Photo ready.");
+  await page.click("#profile-submit");
+  check((await page.textContent("#profile-status")) === "Profile saved." && await page.locator(".member-card img.avatar").count() === 1, "profile: photo saved");
+  check((await page.locator(".member-card", { hasText: "(you)" }).textContent()).includes("Carrot"), "profile: plants saved (Grows: Carrot)");
+  await page.goto(BASE + "gardens.html");
+  const myGroups = await page.textContent("#my-groups");
+  check(myGroups.includes("Allmende-Kontor") && myGroups.includes("Owner"), "gardens page: your group is listed, as Owner");
+  await page.selectOption("#garden-type", "group");
+  check(await page.locator(".garden-card").count() === 4, "type filter 'With a group': the 3 examples + yours");
+  await page.goto(BASE + "garden.html?id=w332251381");
+  await page.click("#delete-group");
+  check((await page.textContent("#group-flash")) === "Group deleted." && await page.locator("#start-form").count() === 1, "owner can delete the group");
+  await ctx.close();
 }
 
 await browser.close();

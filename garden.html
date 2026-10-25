@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden · Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preload" href="font/urbanist-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+<body data-page="garden">
+    <h1 id="garden-title">GARDEN</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="month.html">This Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+            <li><a href="gardens.html" aria-current="true">Gardens</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+        </ul>
+    </nav>
+
+    <div class="community-page">
+        <p><a href="gardens.html">← All gardens</a></p>
+        <aside class="prototype-banner">
+            <p><strong>Prototype:</strong> groups, members and notes are examples or saved only in this browser. Nothing is sent anywhere.</p>
+            <button type="button" class="button-secondary small-button" id="reset-prototype">Reset prototype data</button>
+        </aside>
+        <p class="form-status" id="community-status" role="status"></p>
+
+        <!-- Filled by community.js: the garden's details and its group -->
+        <div id="garden-main"></div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="gardens-data.js"></script>
+    <script src="community-demo.js"></script>
+    <script src="app.js"></script>
+    <script src="community.js"></script>
+</body>
+</html>
