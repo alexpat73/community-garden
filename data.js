@@ -396,6 +396,51 @@ const PLANTS = [
   },
 ];
 
+// Questions from first-time gardeners, shown on the desktop home page and in the app's Settings.
+// The answers are HTML; links point to desktop pages (the app turns them into in-app actions).
+const FAQ = [
+  {
+    q: "I've never gardened. Where do I start?",
+    a: "Open <a href=\"month.html\">This Month</a> and pick two or three plants marked <span class=\"tag\">easy</span>. Radishes, lettuce, bush beans, zucchini and Swiss chard are hard to get wrong. Start small: one well-kept bed teaches you more than a whole plot full of weeds.",
+  },
+  {
+    q: "What do \"start indoors\", \"sow outdoors\" and \"plant out\" mean?",
+    a: "<strong>Start indoors:</strong> sow seeds in small pots on a bright windowsill so they get a head start. <strong>Sow outdoors:</strong> put the seeds straight into the bed. <strong>Plant out:</strong> move young plants, your own or bought ones, into the bed. <strong>Harvest:</strong> pick and eat.",
+  },
+  {
+    q: "When can tomatoes, zucchini and other cold-sensitive plants go outside?",
+    a: "After the Eisheiligen (the \"Ice Saints\", 11–15 May). Until then a night frost can still kill them. If the forecast on this page shows a frost risk, wait a few more days or cover the plants with fleece.",
+  },
+  {
+    q: "How often should I water?",
+    a: "Water in the morning, at the base of the plant rather than on the leaves. In dry spells, water deeply two or three times a week instead of a little every day: it makes the roots grow deeper. Seeds and seedlings are the exception and need moist soil every day.",
+  },
+  {
+    q: "How far apart do plants go?",
+    a: "Every plant on <a href=\"plants.html\">All Plants</a> lists its spacing. As a rule of thumb, radishes and carrots go a few centimetres apart in rows, while zucchini and pumpkins need about a metre each.",
+  },
+  {
+    q: "The previous gardener left nothing behind. How do I find out about my plot?",
+    a: "Look for plants that come back every year, like rhubarb, strawberries or chives. Ask your neighbours and your club's garden advisor (Fachberater), who usually knows the plot's history and can help you get a soil test. Then start your own notes on <a href=\"notes.html\">My Notes</a>, so the next person isn't in the same situation.",
+  },
+  {
+    q: "Are there rules for my allotment?",
+    a: "Yes. German allotments follow the Federal Allotment Garden Act (Bundeskleingartengesetz) and their club's own garden rules (Gartenordnung). Usually at least a third of the plot has to be used for growing fruit and vegetables, and there are rules for sheds, hedges and quiet hours. Ask your club for a copy.",
+  },
+  {
+    q: "Where do the weather numbers come from?",
+    a: "The monthly values are long-term averages for central Germany: the north is milder in winter, the south and higher ground are colder. The 7-day forecast comes live from Open-Meteo, and a frost warning appears when a night is forecast to drop to 2 °C or lower.",
+  },
+  {
+    q: "How do garden groups work?",
+    a: "On <a href=\"gardens.html\">Gardens</a> you can find community gardens and allotment colonies in Berlin, ask to join a garden's group, or start a group for your own garden. Members share what they grow and post notes; each note is either for members only or public. <strong>This part is a prototype:</strong> the example groups and anything you add are saved only in this browser, and join requests are answered by a pretend admin.",
+  },
+  {
+    q: "Are my notes private?",
+    a: "Yes. They are saved only in this browser on this device and are never sent anywhere. Clearing your browser data deletes them, so use <strong>Download notes</strong> now and then to keep a copy.",
+  },
+];
+
 // Cities for the live forecast on the home page.
 const CITIES = [
   { name: "Berlin",     lat: 52.52, lon: 13.41 },

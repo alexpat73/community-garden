@@ -1,4 +1,4 @@
-// Browser tests for every page, the notes form, both harvest mini-games and the garden groups.
+// Browser tests for every page, the notes form, both harvest mini-games, the garden groups and the mobile app.
 //
 //   npm install                                  (once)
 //   npx playwright install chromium-headless-shell (once)
@@ -14,7 +14,8 @@ import { fileURLToPath } from "node:url";
 // A tiny web server for the project folder, so the pages load like they do online.
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png",
-  ".svg": "image/svg+xml", ".mp3": "audio/mpeg", ".woff2": "font/woff2", ".json": "application/json" };
+  ".svg": "image/svg+xml", ".mp3": "audio/mpeg", ".woff2": "font/woff2", ".json": "application/json",
+  ".webmanifest": "application/manifest+json" };
 let server = null;
 let BASE = process.env.BASE;
 if (!BASE) {
@@ -54,11 +55,11 @@ const cropOf = (page) => page.evaluate(() => getComputedStyle(document.querySele
 
 // ---------- every page loads cleanly ----------
 for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "notes.html", "gardens.html",
-  "garden.html?id=demo-wedding", "garden.html?id=w332251381", "garden.html?id=does-not-exist"]) {
+  "garden.html?id=demo-wedding", "garden.html?id=w332251381", "garden.html?id=does-not-exist", "app.html"]) {
   const { page, errors } = await open(p);
   await page.waitForTimeout(400);
   check(errors.length === 0, `${p}: no errors ${errors.join(" | ")}`);
-  check(await page.locator('.navbar a[href="index.html#faq"]').count() === 1, `${p}: FAQ link in nav`);
+  if (p !== "app.html") check(await page.locator('.navbar a[href="index.html#faq"]').count() === 1, `${p}: FAQ link in nav`); // the app has a tab bar instead
   await page.close();
 }
 
@@ -69,6 +70,7 @@ for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "n
   check(await page.locator("#harvest-spot .mc-carrot").count() === (month === 10 ? 1 : 0), "home: carrot shown only in October");
   check(await page.locator("#harvest-spot .mc-stage:not(.mc-carrot)").count() === (month === 9 ? 1 : 0), "home: pumpkin shown only in September");
   check(await page.locator("#faq details").count() === 10, "home: 10 FAQ questions");
+  check(await page.locator('.app-promo img[src="images/qr-app.svg"]').count() === 1 && await page.locator('.app-promo a[href="app.html"]').count() === 1, "home: QR code and link to the mobile app");
   await page.close();
 }
 
@@ -201,7 +203,7 @@ const TINY_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0
   await page.selectOption("#garden-type", "c");
   await page.waitForTimeout(300);
   const neukolln = await page.locator(".garden-meta").allTextContents();
-  check(neukolln.length > 0 && neukolln.every((m) => m.startsWith("Community garden · Neukölln")), `district + type filters (${neukolln.length} community gardens in Neukölln)`);
+  check(neukolln.length > 0 && neukolln.every((m) => m.startsWith("Community garden · ") && m.includes("Neukölln")), `district + type filters (${neukolln.length} community gardens in Neukölln)`);
   await page.selectOption("#garden-district", "");
   await page.selectOption("#garden-type", "example");
   check(await page.locator(".garden-card").count() === 3, "type filter: 3 example groups");
@@ -215,6 +217,20 @@ const TINY_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0
   });
   check(km.every((d, i) => i === 0 || d >= km[i - 1]) && km[0] < 2, `near me: nearest first (${km.slice(0, 3).join(", ")} km)`);
   check((await page.textContent("#near-status")).includes("never leaves this device"), "near me: says the location stays on the device");
+
+  await page.fill("#garden-search", "Wedding");
+  await page.waitForTimeout(300);
+  const wedding = await page.locator(".garden-meta").allTextContents();
+  check(wedding.length > 3 && wedding.every((m) => m.includes("Wedding")) && (await page.textContent("#garden-count")).endsWith(" in Wedding"), `neighbourhood search: ${wedding.length} gardens in Wedding`);
+  await page.fill("#garden-search", "12043");
+  await page.waitForTimeout(300);
+  const byPostcode = (await page.locator(".garden-meta").allTextContents()).slice(0, 6).map((m) => {
+    const [, n, unit] = m.match(/([\d.]+) (m|km)$/);
+    return unit === "m" ? n / 1000 : Number(n);
+  });
+  check((await page.textContent("#garden-count")).endsWith("closest to 12043 first") && byPostcode.every((d, i) => i === 0 || d >= byPostcode[i - 1]), "postcode search: nearest to 12043 first");
+  await page.fill("#garden-search", "");
+  await page.waitForTimeout(300);
 
   check(!loaded.some((u) => /leaflet|tile\.openstreetmap/.test(u)), "nothing from the map is downloaded before Show map");
   await page.click("#show-map");
@@ -348,6 +364,198 @@ const photoInfo = (page, selector) => page.$eval(selector, (img) => new Promise(
   await page.goto(BASE + "garden.html?id=w332251381");
   await page.click("#delete-group");
   check((await page.textContent("#group-flash")) === "Group deleted." && await page.locator("#start-form").count() === 1, "owner can delete the group");
+  await ctx.close();
+}
+
+// ---------- The mobile app ----------
+const WEATHER = { daily: { // a fixed week, with one frosty night (1 °C on day 3)
+  time: ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01"],
+  temperature_2m_max: [12, 11, 9, 10, 13, 12, 11], temperature_2m_min: [5, 4, 1, 3, 6, 5, 4], precipitation_sum: [0, 1.2, 0, 0.4, 3, 0, 0] } };
+// serviceWorkers "block": with the offline worker running, the fake weather and map answers can't be used
+const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" };
+const fakeNetwork = async (ctx) => {
+  await ctx.route("https://api.open-meteo.com/**", (route) => route.fulfill({ json: WEATHER }));
+  await ctx.route("https://tile.openstreetmap.org/**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: TINY_PNG }));
+};
+// Tabs switch on the "hashchange" event, a moment after the tap.
+const goTab = async (page, tab) => {
+  await page.click(`.tabbar a[data-tab="${tab}"]`);
+  await page.waitForSelector(`#tab-${tab}:not([hidden])`);
+};
+const distances = async (page, selector) => (await page.locator(selector).allTextContents()).slice(0, 6).map((m) => {
+  const [, n, unit] = m.match(/([\d.]+) (m|km)$/);
+  return unit === "m" ? n / 1000 : Number(n);
+});
+{
+  const loaded = [];
+  const { page, ctx, errors, plays } = await open("app.html", {
+    context: PHONE,
+    before: async (page, ctx) => {
+      await fakeNetwork(ctx);
+      await page.clock.install(); // to skip the pretend admin's wait
+      page.on("request", (r) => loaded.push(r.url()));
+      page.on("dialog", (d) => d.accept());
+    },
+  });
+  // Welcome
+  check(await page.isVisible("#welcome") && await page.isHidden("#tabbar"), "app: the first visit shows the welcome screen");
+  await page.click("#welcome-form button[type=submit]");
+  check((await page.textContent("#welcome-status")) === "One field is still empty.", "app: you need a name to get started");
+  await page.fill("#welcome-name", "Alex");
+  await page.selectOption("#welcome-district", "Neukölln");
+  await page.click("#welcome-form button[type=submit]");
+  check((await page.textContent("#greeting")) === "Welcome, Alex", "app: Welcome, Alex");
+  check((await page.locator(".tabbar a").allTextContents()).join() === "Home,Explore,Settings", "app: three tabs, each with a label");
+  check(await page.getAttribute('.tabbar a[data-tab="home"]', "aria-current") === "page", "app: Home is the current tab");
+
+  // Home
+  check((await page.textContent("#tab-home .tagline")).startsWith("New to your allotment and the last gardener left no notes?"), "home: the tagline under the greeting");
+  check((await page.textContent("#month-chip")).startsWith(`It's ${new Date().toLocaleDateString("en-GB", { month: "long" })}`), "home: says which month it is");
+  await page.waitForFunction(() => document.querySelectorAll("#forecast tr").length === 8);
+  check((await page.textContent("#forecast-summary")).startsWith("Frost risk") && await page.locator("#forecast-summary.has-frost").count() === 1, "home: the week's weather, with a frost warning");
+  const jobs = page.locator("#jobs-list input");
+  const jobCount = await jobs.count();
+  await jobs.nth(0).check();
+  await jobs.nth(1).check();
+  check((await page.textContent("#jobs-progress")) === `2 of ${jobCount} done`, "home: the jobs checklist counts what's done");
+  await page.locator("#season .chip").first().click();
+  check(await page.isVisible("#sheet") && await page.locator("#sheet .facts").count() === 1, "home: an in-season plant opens its details");
+  await page.keyboard.press("Escape");
+  check(await page.isHidden("#sheet"), "sheet: Escape closes it");
+  check(await page.locator(".mini-month").count() === 12, "home: the 12 months, small");
+  await page.click('.mini-month[data-month="3"]');
+  check((await page.textContent("#sheet-title")) === "March", "home: a month opens its own sheet");
+  await page.goBack();
+  check(await page.isHidden("#sheet"), "sheet: the phone's Back button closes it");
+  const month = new Date().getMonth() + 1;
+  check(await page.locator("#harvest-spot .mc-carrot").count() === (month === 10 ? 1 : 0) &&
+    await page.locator("#harvest-spot .mc-stage:not(.mc-carrot)").count() === (month === 9 ? 1 : 0), "home: this month's mini-game");
+  check((await page.textContent("#community-updates")).includes("Find a garden in Neukölln"), "home: not in a group yet, so it suggests Explore (in your district)");
+
+  // Update garden
+  await page.click("#update-garden");
+  await page.click("#update-submit");
+  check((await page.textContent("#update-status")) === "3 fields are still empty.", "update garden: empty fields are blocked");
+  await page.selectOption("#update-kind", "Harvested");
+  await page.fill("#update-plant", "Kale");
+  await page.fill("#update-text", "First kale of the year");
+  check(await page.getAttribute("#update-photo", "capture") === "environment", "update garden: the photo field opens the camera");
+  await page.setInputFiles("#update-photo", join(FIXTURES, "iphone.heic"));
+  await page.waitForFunction(() => document.querySelector("#update-photo-status").textContent === "Photo ready.", null, { timeout: 20000 });
+  await page.click("#update-submit");
+  check((await page.textContent("#update-status")) === "Saved to My notes.", "update garden: the note is saved");
+  await page.check('#update-growing input[value="kale"]');
+  await page.check('#update-growing input[value="garlic"]');
+  await page.click("#update-growing button[type=submit]");
+  check((await page.textContent("#growing-status")).startsWith("Saved"), "update garden: what I grow is saved");
+  await page.click("#sheet-close");
+  check((await page.textContent("#app-notes")).includes("First kale of the year") && await page.locator("#app-notes .note-photo").count() === 1, "home: the new note shows in My notes, with its photo");
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.click("#photo-note")]);
+  check(Boolean(chooser) && await page.isVisible("#update-photo"), "Photo note opens the camera straight away");
+  await page.click("#sheet-close");
+
+  // Suggestion box
+  await page.click("#suggest-form button[type=submit]");
+  check((await page.textContent("#suggest-status")) === "One field is still empty.", "suggestion box: empty is blocked");
+  await page.fill("#suggest-text", "A reminder when it's time to sow tomatoes");
+  await page.click("#suggest-form button[type=submit]");
+  check((await page.textContent("#suggest-status")).startsWith("Thanks!") &&
+    (await page.evaluate(() => JSON.parse(localStorage.getItem("garden-suggestions")).length)) === 1, "suggestion box: sent and saved");
+
+  await page.reload();
+  check((await page.textContent("#greeting")) === "Welcome back, Alex", "app: Welcome back, Alex after a reload");
+  check((await page.textContent("#jobs-progress")).startsWith("2 of"), "home: ticked jobs are kept");
+
+  // Explore
+  await goTab(page, "explore");
+  check(page.url().endsWith("#explore") && await page.getAttribute('.tabbar a[data-tab="explore"]', "aria-current") === "page", "tabs: Explore opens and the tab bar follows");
+  check(!loaded.some((u) => /leaflet|tile\.openstreetmap/.test(u)) && await page.isVisible("#map-consent"), "explore: asks before loading the street map");
+  await page.fill("#explore-search", "12043");
+  await page.waitForTimeout(400);
+  const nearPostcode = await distances(page, ".result-card .garden-meta");
+  check((await page.textContent("#explore-count")).endsWith("closest to 12043 first") && nearPostcode.every((d, i) => i === 0 || d >= nearPostcode[i - 1]), "explore: postcode search, nearest first");
+  await page.fill("#explore-search", "Wedding");
+  await page.waitForTimeout(400);
+  const wedding = await page.locator(".result-card .garden-meta").allTextContents();
+  check(wedding.length > 3 && wedding.every((m) => m.includes("Wedding")), "explore: neighbourhood search (Wedding)");
+  await page.check("#always-map");
+  await page.click("#load-map");
+  await page.waitForSelector("#app-map.leaflet-container");
+  check(loaded.some((u) => u.endsWith("vendor/leaflet/leaflet.js")) && await page.isHidden("#map-consent"), "explore: Load map shows the map");
+  check((await page.evaluate(() => JSON.parse(localStorage.getItem("garden-app-v1")).prefs.autoMap)) === true, "explore: 'Always load the map' is remembered");
+
+  await page.fill("#explore-search", "Sonnenbeet");
+  await page.waitForTimeout(400);
+  await page.click('#explore-results [data-garden="demo-wedding"]');
+  check((await page.textContent("#sheet-title")) === "Sonnenbeet Wedding (example)", "explore: a garden opens in a sheet");
+  check(await page.evaluate(() => {
+    const sheet = document.querySelector("#sheet");
+    const box = sheet.getBoundingClientRect();
+    return sheet.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+  }), "garden sheet: shows above the map");
+  check(await page.locator("#sheet .note-card").count() === 3 && (await page.textContent("#sheet .hidden-notes")).startsWith("2 members-only notes"), "garden sheet: public notes, and how many are hidden");
+  await page.fill("#app-join-message", "Hi! I just got a plot nearby.");
+  await page.fill("#app-join-growing", "Tomatoes");
+  await page.click("#app-join button[type=submit]");
+  check((await page.textContent("#sheet .request-status")).includes("waiting for approval"), "join from the app: request pending");
+  await page.clock.runFor(5000);
+  await page.waitForSelector("#sheet .flash");
+  check((await page.textContent("#sheet .flash")).includes("Anna accepted") &&
+    await page.locator("#sheet .note-card .tag", { hasText: "Members only" }).count() === 2, "join from the app: accepted, members-only notes appear");
+  await page.click("#sheet-close");
+  await goTab(page, "home");
+  check((await page.textContent("#community-updates")).includes("Sonnenbeet Wedding") && await page.locator("#community-updates .note-card").count() > 0, "home: updates from your garden community");
+
+  // Settings
+  await goTab(page, "settings");
+  check(await page.locator("#app-faq details").count() === 10, "settings: the same 10 FAQ questions");
+  await page.fill("#app-profile-name", "Alexandra");
+  await page.click("#app-profile-submit");
+  check((await page.textContent("#app-profile-status")) === "Profile saved." && (await page.textContent("#greeting")) === "Welcome back, Alexandra", "settings: a new name shows in the greeting");
+  await page.uncheck("#pref-near-me");
+  await goTab(page, "explore");
+  check(await page.isHidden("#explore-near"), "permissions: 'Near me' off hides the button");
+  await goTab(page, "settings");
+  await page.uncheck("#pref-sounds");
+  await goTab(page, "home");
+  await plays();
+  if (await page.locator("#harvest-spot .mc-carrot").count()) await page.click("#harvest-spot .mc-carrot");
+  check((await plays()).length === 0, "permissions: sounds off means no sound");
+  await goTab(page, "settings");
+  await page.check('input[name="pref-visibility"][value="public"]');
+  const desktop = await ctx.newPage();
+  await desktop.goto(BASE + "garden.html?id=demo-wedding");
+  check(await desktop.isChecked('input[name="visibility"][value="public"]'), "permissions: new group notes default to Public (desktop page too)");
+  await desktop.close();
+  const [download] = await Promise.all([page.waitForEvent("download"), page.click("#download-notes")]);
+  check(download.suggestedFilename().startsWith("garden-notes-"), "settings: Download my notes gives a file");
+  await page.click("#logout");
+  check(await page.isVisible("#welcome") && (await page.textContent("#welcome-title")) === "Welcome back, Alexandra", "log out: back to the welcome screen");
+  await page.click("#welcome-form button[type=submit]"); // the name is filled in
+  check((await page.textContent("#app-notes")).includes("First kale of the year"), "log back in: the notes are still there");
+  await goTab(page, "settings");
+  await page.click("#delete-profile");
+  check(await page.isVisible("#welcome") && (await page.inputValue("#welcome-name")) === "", "delete profile: back to an empty welcome screen");
+  check(await page.evaluate(() => ["garden-app-v1", "garden-notes", "garden-suggestions"].every((key) => localStorage.getItem(key) === null)), "delete profile: name, notes and suggestions erased");
+  check(errors.length === 0, `app: no errors ${errors.join(" | ")}`);
+  await ctx.close();
+}
+
+// ---------- The app works offline and can be installed ----------
+{
+  const { page, ctx } = await open("app.html", { context: { viewport: { width: 390, height: 844 }, isMobile: true } });
+  const manifest = await (await page.request.get(BASE + "manifest.webmanifest")).json();
+  check(manifest.display === "standalone" && manifest.start_url === "app.html#home", "PWA: the manifest makes it a full-screen app");
+  const icons = await Promise.all(manifest.icons.map((i) => page.request.get(BASE + i.src)));
+  check(icons.length === 3 && icons.every((r) => r.ok()), "PWA: its home-screen icons exist");
+  const scope = await page.evaluate(() => navigator.serviceWorker.ready.then((r) => r.scope));
+  check(scope.endsWith("/app"), "PWA: the offline worker looks after the app only");
+  await page.reload(); // now the worker controls the page
+  await page.evaluate(() => navigator.serviceWorker.controller || new Promise((resolve) => navigator.serviceWorker.addEventListener("controllerchange", resolve)));
+  await ctx.setOffline(true);
+  await page.reload();
+  check(await page.isVisible("#welcome") && (await page.textContent("#welcome-title")) === "Community Garden", "PWA: the app still opens with no internet");
+  await ctx.setOffline(false);
   await ctx.close();
 }
 

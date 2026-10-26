@@ -1,5 +1,6 @@
 // Builds gardens-data.js: every named community garden and allotment colony in Berlin,
-// from OpenStreetMap. Run by hand when the list should be refreshed:
+// with its district and neighbourhood, plus the centres of Berlin's neighbourhoods and
+// postcode areas (for "search by postcode"). From OpenStreetMap. Run by hand to refresh:
 //
 //   node tools/fetch-gardens.mjs
 //
@@ -32,6 +33,27 @@ foreach.districts->.district(
     nwr["landuse"="allotments"]["name"](area.district);
   );
   out center tags;
+);`;
+
+// Second query: the neighbourhoods (Ortsteile) and postcode areas with their centres,
+// then for each neighbourhood the ids of the gardens inside it.
+const AREAS_QUERY = `
+[out:json][timeout:180];
+area["name"="Berlin"]["admin_level"="4"]->.berlin;
+(
+  rel(area.berlin)["boundary"="administrative"]["admin_level"="10"];
+  rel(area.berlin)["boundary"="postal_code"];
+);
+out center tags;
+rel(area.berlin)["boundary"="administrative"]["admin_level"="10"];
+map_to_area->.hoods;
+foreach.hoods->.hood(
+  .hood out tags;
+  (
+    nwr["leisure"="garden"]["garden:type"="community"]["name"](area.hood);
+    nwr["landuse"="allotments"]["name"](area.hood);
+  );
+  out ids;
 );`;
 
 async function overpass(query) {
@@ -89,6 +111,32 @@ for (const g of byNameAndDistrict.values()) {
 }
 const isPlotSeries = (g) => /\d+[a-z]?$/i.test(g[0]) && seriesSize.get(seriesKey(g)) >= 3;
 
+// Neighbourhoods and postcodes
+const areasAnswer = await overpass(AREAS_QUERY);
+const neighbourhoods = [];          // [name, lat, lon]
+const postcodes = {};               // "12043": [lat, lon]
+const neighbourhoodOf = new Map();  // garden id -> neighbourhood name
+let currentHood = null;
+for (const el of areasAnswer.elements) {
+  if (el.type === "area") { currentHood = el.tags?.name ?? null; continue; }
+  if (el.tags && el.center) { // the centres, listed before the per-neighbourhood ids
+    const code = el.tags.postal_code;
+    if (el.tags.boundary === "postal_code" && /^\d{5}$/.test(code) && code >= "10115" && code <= "14199") {
+      postcodes[code] = [round(el.center.lat), round(el.center.lon)];
+    } else if (el.tags.admin_level === "10" && el.tags.name) {
+      neighbourhoods.push([el.tags.name, round(el.center.lat), round(el.center.lon)]);
+    }
+    continue;
+  }
+  if (currentHood) neighbourhoodOf.set(`${el.type[0]}${el.id}`, currentHood);
+}
+neighbourhoods.sort((a, b) => a[0].localeCompare(b[0], "de"));
+const hoodIndex = new Map(neighbourhoods.map((n, i) => [n[0], i]));
+for (const g of byNameAndDistrict.values()) {
+  const hood = neighbourhoodOf.get(g[7]);
+  g.push(hood != null && hoodIndex.has(hood) ? hoodIndex.get(hood) : -1);
+}
+
 const gardens = [...byNameAndDistrict.values()]
   .filter((g) => !isPlotSeries(g))
   .sort((a, b) => a[0].localeCompare(b[0], "de"));
@@ -97,12 +145,18 @@ const js = `// Berlin community gardens and allotment colonies.
 // Data © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright).
 // Generated ${today} by tools/fetch-gardens.mjs. Do not edit by hand.
 // Each garden: [name, type ("c" community garden, "a" allotment colony), lat, lon,
-//               district index, website, postcode, OpenStreetMap id]
+//               district index, website, postcode, OpenStreetMap id, neighbourhood index or -1]
 const GARDEN_DISTRICTS = ${JSON.stringify(DISTRICTS)};
+// Neighbourhoods (Ortsteile): [name, lat, lon] of their centre
+const GARDEN_AREAS = ${JSON.stringify(neighbourhoods)};
+// Berlin postcode areas: "12043": [lat, lon] of their centre
+const POSTCODES = ${JSON.stringify(postcodes)};
 const GARDENS = [
 ${gardens.map((g) => JSON.stringify(g)).join(",\n")}
 ];
 `;
 await writeFile(OUT, js);
 const count = (t) => gardens.filter((g) => g[1] === t).length;
-console.log(`Wrote ${gardens.length} gardens (${count("c")} community gardens, ${count("a")} allotment colonies), ${(js.length / 1024).toFixed(0)} KB.`);
+console.log(`Wrote ${gardens.length} gardens (${count("c")} community gardens, ${count("a")} allotment colonies), ` +
+  `${neighbourhoods.length} neighbourhoods, ${Object.keys(postcodes).length} postcodes, ${(js.length / 1024).toFixed(0)} KB.`);
+console.log(`Gardens without a neighbourhood: ${gardens.filter((g) => g[8] < 0).length}`);

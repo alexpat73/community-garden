@@ -85,6 +85,38 @@ function loadNotes() {
     return [];
   }
 }
+// The mobile app's profile and settings (app.html). Kept here because other pages read them too.
+const APP_KEY = "garden-app-v1";
+const APP_DEFAULTS = {
+  signedIn: false, returning: false, name: "", district: "", photo: null, growing: [],
+  prefs: { nearMe: true, autoMap: false, noteVisibility: "members" },
+};
+function loadAppSettings() {
+  const settings = structuredClone(APP_DEFAULTS);
+  try {
+    const saved = JSON.parse(storageGet(APP_KEY));
+    if (saved && typeof saved === "object") Object.assign(settings, saved, { prefs: { ...settings.prefs, ...saved.prefs } });
+  } catch {
+    // broken or missing: use the defaults
+  }
+  return settings;
+}
+const saveAppSettings = (settings) => storageSet(APP_KEY, JSON.stringify(settings));
+
+// Only our own resized photos (JPEG/PNG data URLs) are shown, e.g. from the app's photo notes or an imported file.
+const safePhoto = (photo) => (typeof photo === "string" && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(photo) ? photo : "");
+const notePhoto = (note) => (safePhoto(note.photo) ? `<img class="note-photo" src="${note.photo}" alt="Photo for this note">` : "");
+
+// Saves the notes as a JSON file (desktop My Notes page and the app's Settings).
+function downloadNotes(notes) {
+  const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `garden-notes-${todayISO()}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
 function saveNotes(notes) {
   return storageSet(NOTES_KEY, JSON.stringify(notes));
 }
@@ -131,7 +163,13 @@ function renderHome() {
   }).join("");
 
   HARVEST_GAMES[now]?.($("#harvest-spot"));
+  $("#faq-list").innerHTML = faqHtml();
   setupForecast();
+}
+
+// The FAQ from data.js as fold-out questions (answers are trusted HTML from data.js, not user input).
+function faqHtml() {
+  return FAQ.map(({ q, a }) => `<details><summary>${esc(q)}</summary><p>${a}</p></details>`).join("");
 }
 
 // Live 7-day forecast from Open-Meteo (free, no API key needed).
@@ -263,7 +301,7 @@ function plantList(month, stage) {
 
 function noteSummary(note) {
   return `<li><strong>${esc(formatDate(note.date))}</strong> · ${esc(note.kind)}${note.plant ? ` · ${esc(note.plant)}` : ""}
-    ${note.text ? `<br><span class="note-text">${esc(note.text)}</span>` : ""}</li>`;
+    ${note.text ? `<br><span class="note-text">${esc(note.text)}</span>` : ""}${notePhoto(note)}</li>`;
 }
 
 // ---------- All plants page ----------
@@ -379,6 +417,7 @@ function renderNotesPage() {
           <li>
             <strong>${esc(formatDate(note.date))}</strong> · ${esc(note.kind)}${note.plant ? ` · ${esc(note.plant)}` : ""}
             ${note.text ? `<br><span class="note-text">${esc(note.text)}</span>` : ""}
+            ${notePhoto(note)}
             <button type="button" class="delete" data-id="${esc(note.id)}">Delete</button>
           </li>`).join("")
       : '<li class="empty">No notes yet. Your first one goes above.</li>';
@@ -426,14 +465,7 @@ function renderNotesPage() {
     draw();
   });
 
-  $("#export-notes").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `garden-notes-${todayISO()}.json`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-  });
+  $("#export-notes").addEventListener("click", () => downloadNotes(notes));
 
   $("#import-notes").addEventListener("change", async (event) => {
     const file = event.target.files[0];
@@ -454,6 +486,7 @@ function renderNotesPage() {
           kind: String(item.kind || "Other"),
           plant: String(item.plant || ""),
           text: String(item.text || ""),
+          ...(safePhoto(item.photo) ? { photo: item.photo } : {}),
         });
         added++;
       }
@@ -482,7 +515,9 @@ const CUBE_FACES = ["front", "back", "left", "right", "top", "bottom"]
   .map((face) => `<span class="mc-face mc-${face}"></span>`).join("");
 
 const sounds = {};
+const SOUNDS_KEY = "garden-sounds"; // "off" when sounds are switched off in the app's Settings
 function playSound(src, volume = 1) {
+  if (storageGet(SOUNDS_KEY) === "off") return;
   sounds[src] ??= new Audio(src);
   const sound = sounds[src].cloneNode(); // a copy, so quick hits can overlap
   sound.volume = volume;

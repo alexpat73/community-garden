@@ -293,3 +293,89 @@ Do primary and secondary research on who would use the site, then act on it: let
 - Run the interviews, then test the prototype with some interviewees (Reset between sessions).
 - Mobile version.
 - Still open: card-front contrast, whether tags stay green, background image and month photos, a smaller favicon, a Lighthouse audit.
+
+
+---
+
+## Entry 5 · 26 October 2026 · The mobile app
+
+### Session goal
+
+A mobile version, because people use their phones in the garden, not a laptop. It can be static where needed (it's for class), but it should follow the desktop colours for consistency.
+
+### How the session went
+
+| # | What I asked the AI (summarised) | What the AI did | What I decided or changed |
+|---|---|---|---|
+| 1 | A simple 3-button UI (Home, Explore, Settings) with icons from Font Awesome, in the desktop colours. **Home:** "Welcome {user}", my notes, garden community updates, what's in season, update garden, a suggestion box, the tagline, the month, the month's mini-game and the week's weather. **Explore:** a map searchable by zone or postcode, public notes, and a contact form to join for private notes. **Settings:** the basics, FAQ, update and delete profile, permissions, log out. Is anything missing? | Checked Font Awesome: the free icons need **no account** (CC BY 4.0, credit only), so they're self-hosted. Checked OpenStreetMap: it has Berlin's **97 neighbourhoods** and **192 postcode areas**, which "search by zone or postcode" needs. Suggested extras, then asked three questions. | "Update garden" = **log a note + what I grow**; a **separate app page**; and all four extras: **works offline and installable**, a **jobs checklist**, a **camera button**, a **QR code** on the desktop site. |
+| 2 | Build it. | Built and tested it (see below). | — |
+
+### What the app does
+
+- **Welcome:** just "What should we call you?" and an optional district. No fake email or password, because a pretend login teaches people to type real passwords into a prototype.
+- **Home:**
+  - "Welcome, Alex" (then "Welcome back"), my tagline and "It's October · Autumn"
+  - the week's weather as swipeable day cards with a frost warning
+  - **Update garden** and **Photo note**, which opens the camera straight away
+  - **this month's jobs** with "2 of 5 done"
+  - what's in season (tap a plant for its details) and the 12 months as small cards
+  - updates from my garden groups, my notes, the month's mini-game (the October carrot) and a suggestion box
+- **Explore:**
+  - search by district, **neighbourhood** ("Wedding") or **postcode** ("12043" lists the nearest gardens first), filter chips, and "Near me"
+  - the street map loads after one tap, or always, if allowed
+  - a garden opens in a bottom sheet: public notes, "2 members-only notes are hidden", and the Ask to join form. Once accepted, the members-only notes appear.
+- **Settings:**
+  - profile (with an optional photo)
+  - permissions: location, auto-load map, sounds, and whether new group notes are public by default (the desktop group page follows this too)
+  - the same 10 FAQ questions as the desktop site, install steps, download notes and reset
+  - **log out** (keeps my data) and **delete profile** (erases everything on the phone)
+
+### Design decisions and why
+
+- **Same colours, one job each:** tan = important (the current tab is tan, like the desktop nav), green = clickable. Delete is the only red button.
+- **Icon + text label on every tab** (heuristic #6, recognition rather than recall). Tap targets are at least 48 px, and the layout respects the iPhone notch and home bar.
+- **One bottom sheet for details,** a common phone pattern. It closes with ✕, Escape or the phone's Back button, and keyboard focus stays inside it.
+- **Reuse instead of copies:** the app uses the same weather, notes, months, plants, mini-games, form checks, garden search and photo code as the desktop site. The FAQ moved into `data.js` so both show one copy. The garden search became one shared `findGardens()`, so the desktop site also gained neighbourhood and postcode search.
+- **Privacy:** the map still loads only on request. My location stays on the phone, and photos lose their GPS data.
+- **For presenting:** on a computer the app shows inside a phone frame, and a QR code on the desktop home page opens it on a real phone.
+
+### Problems and fixes
+
+- **The map covered the bottom sheet:** Leaflet gives its layers high z-index values (400+). `isolation: isolate` on the map's container keeps them below the sheet.
+- **Misleading wording:** "978 gardens near 12043" sounded like they were all near. It now says "978 gardens, closest to 12043 first".
+- **Small fixes:** the logo was cream instead of green (Font Awesome uses `currentColor`, so it needs CSS `color`, not `fill`), and the forecast day cards now show the high in bold and the low dimmer, since there's no header row.
+- **Map snapping back:** the map re-centred on every redraw, because a new location object is never equal to the last one. It now only moves when the searched place changes.
+- **Testing lessons:**
+  - Tabs switch on the `hashchange` event a moment after the tap, so the tests wait for the tab to appear.
+  - With the offline service worker running, the tests' fake weather and map tiles can't be used, so the main app tests switch it off. A separate test checks offline mode with it on.
+
+### Testing
+
+- **57 new browser checks, 157 in total, all passing:**
+  - the welcome screen, tabs and the Back button
+  - every Home section, Update garden with a real HEIC photo, the camera opening, and the suggestion box
+  - Explore's postcode and neighbourhood search, the map consent, and joining a group from the app
+  - every Settings option, including Log out and Delete profile
+  - the desktop's new search and QR box
+- **The app works offline:** with the internet switched off in the test browser, `app.html` still opens from the service worker's cache.
+- **The QR code was decoded** from a screenshot to check it really opens `app.html`.
+- Screenshots at phone size (390×844) for each tab and sheet, plus the phone frame at 1280px.
+
+### Web optimization notes
+
+- **Icons:** all 19 in one 9.4 KB sprite, with no Font Awesome script or font download.
+- **QR code:** a 1.9 KB SVG.
+- **Offline caching:** the service worker answers from its cache instantly and fetches fresh copies in the background ("stale while revalidate"). The weather tries the network first and falls back to the last forecast.
+- **Garden data:** now includes neighbourhoods and postcodes and is still about 28 KB compressed.
+
+### What I learned
+
+- Font Awesome's free icons can be used without an account if you host the SVGs yourself and credit them.
+- A **service worker** can make a website open offline, and a **web app manifest** lets it be installed like an app.
+- CSS stacking contexts: a library's z-index values can escape its box unless the container isolates them.
+
+### Next steps
+
+- Test the app on a real iPhone and Android phone, including installing it and using it offline.
+- Use the app in the interviews or usability tests (Reset between sessions).
+- Still open: card-front contrast, whether tags stay green, background image and month photos, a smaller favicon, a Lighthouse audit.

@@ -6,11 +6,12 @@
 // ============================================================
 
 // Fictional gardens, shown in the search with an "Example" badge.
-// Same shape as GARDENS in gardens-data.js: [name, type, lat, lon, district index, website, postcode, id]
+// Same shape as GARDENS in gardens-data.js, except the neighbourhood is given by name:
+// [name, type, lat, lon, district index, website, postcode, id, neighbourhood]
 const DEMO_GARDENS = [
-  ["Sonnenbeet Wedding (example)", "c", 52.5486, 13.3552, 4, "", "13353", "demo-wedding"],
-  ["Kiezgarten Rixdorf (example)", "c", 52.4731, 13.4436, 5, "", "12043", "demo-rixdorf"],
-  ["Laubenpieper an der Spree (example)", "a", 52.4562, 13.5584, 11, "", "12459", "demo-spree"],
+  ["Sonnenbeet Wedding (example)", "c", 52.5486, 13.3552, 4, "", "13353", "demo-wedding", "Wedding"],
+  ["Kiezgarten Rixdorf (example)", "c", 52.4731, 13.4436, 5, "", "12043", "demo-rixdorf", "Neukölln"],
+  ["Laubenpieper an der Spree (example)", "a", 52.4562, 13.5584, 11, "", "12459", "demo-spree", "Oberschöneweide"],
 ];
 
 // The groups that belong to the example gardens. "date" is days ago, so the examples never look old.

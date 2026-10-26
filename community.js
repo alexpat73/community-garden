@@ -64,13 +64,50 @@ const plantsMentioned = (text) => PLANTS.filter((p) => simplify(text).includes(s
 
 // ---------- All gardens: the examples plus the real ones ----------
 
-const ALL_GARDENS = [...DEMO_GARDENS, ...GARDENS].map(([name, type, lat, lon, district, website, postcode, id]) => ({
-  name, type, lat, lon, website, postcode, id,
-  district: GARDEN_DISTRICTS[district],
-  example: id.startsWith("demo-"),
-  search: simplify(`${name} ${GARDEN_DISTRICTS[district]} ${postcode}`),
-})).sort((a, b) => a.name.localeCompare(b.name, "de"));
+const ALL_GARDENS = [...DEMO_GARDENS, ...GARDENS].map(([name, type, lat, lon, district, website, postcode, id, hood]) => {
+  const area = typeof hood === "string" ? hood : (GARDEN_AREAS[hood]?.[0] ?? ""); // neighbourhood, e.g. "Wedding"
+  return {
+    name, type, lat, lon, website, postcode, id, area,
+    district: GARDEN_DISTRICTS[district],
+    example: id.startsWith("demo-"),
+    search: simplify(`${name} ${area} ${GARDEN_DISTRICTS[district]} ${postcode}`),
+  };
+}).sort((a, b) => a.name.localeCompare(b.name, "de"));
 const gardenById = (id) => ALL_GARDENS.find((g) => g.id === id);
+// "Wedding, Mitte", or just "Neukölln" when the neighbourhood and district share a name
+const placeName = (g) => (g.area && g.area !== g.district ? `${g.area}, ${g.district}` : g.district);
+
+// The garden search, shared by the desktop Gardens page and the app.
+// query can be a name, neighbourhood, district or a Berlin postcode:
+// - a postcode ("12043") lists every garden, nearest to that postcode's centre first
+// - anything else keeps the gardens whose name, neighbourhood, district or postcode contains it
+// "here" (your location) sorts by distance otherwise. Returns { list, centre, label }; each garden
+// in the list gets .km (or null), centre is where the map should look, and label is added straight
+// after "N gardens" to explain the list (", closest to 12043 first" or " in Wedding").
+function findGardens({ query = "", district = "", type = "all", here = null, state }) {
+  const typed = query.trim();
+  const postcode = /^\d{5}$/.test(typed) ? POSTCODES[typed] : null;
+  const text = simplify(typed);
+  const hasGroup = (g) => Boolean(groupOfGarden(state, g.id));
+  const list = ALL_GARDENS.filter((g) =>
+    (postcode || !text || g.search.includes(text)) &&
+    (!district || g.district === district) &&
+    (type === "all" || (type === "example" ? g.example : type === "group" ? hasGroup(g) : g.type === type)));
+
+  let centre = null;
+  let label = "";
+  if (postcode) {
+    centre = { lat: postcode[0], lon: postcode[1] };
+    label = `, closest to ${typed} first`;
+  } else if (text) {
+    const area = GARDEN_AREAS.find((a) => simplify(a[0]) === text);
+    if (area) { centre = { lat: area[1], lon: area[2] }; label = ` in ${area[0]}`; }
+  }
+  const from = postcode ? centre : here;
+  for (const g of list) g.km = from ? distanceKm(from, g) : null;
+  if (from) list.sort((a, b) => a.km - b.km);
+  return { list, centre, label };
+}
 const gardenUrl = (id) => `garden.html?id=${encodeURIComponent(id)}`;
 
 function osmUrl(id) {
@@ -271,29 +308,20 @@ function renderGardens() {
   let markers = null;
   const hasGroup = (g) => Boolean(groupOfGarden(state, g.id));
 
-  function results() {
-    const query = simplify(search.value.trim());
-    const list = ALL_GARDENS.filter((g) =>
-      (!query || g.search.includes(query)) &&
-      (!district.value || g.district === district.value) &&
-      (type.value === "all" || (type.value === "example" ? g.example : type.value === "group" ? hasGroup(g) : g.type === type.value)));
-    if (here) {
-      for (const g of list) g.km = distanceKm(here, g);
-      list.sort((a, b) => a.km - b.km);
-    }
-    return list;
-  }
-
+  let lastPlace = ""; // only move the map when the searched place changes, not on every redraw
   function draw() {
-    const list = results();
+    const { list, centre, label } = findGardens({ query: search.value, district: district.value, type: type.value, here, state });
     const visible = list.slice(0, shown);
+    const where = label;
     $("#garden-count").textContent = list.length
-      ? (visible.length < list.length ? `Showing ${visible.length} of ${list.length} gardens` : `Showing all ${list.length} gardens`)
-      : "No gardens match. Try another name or district.";
+      ? (visible.length < list.length ? `Showing ${visible.length} of ${list.length} gardens${where}` : `Showing all ${list.length} gardens${where}`)
+      : "No gardens match. Try another name, neighbourhood or postcode.";
+    if (map && centre && label !== lastPlace) map.setView([centre.lat, centre.lon], 14);
+    if (map) lastPlace = centre ? label : "";
     $("#garden-results").innerHTML = visible.map((g) => `
       <li class="garden-card">
         <a class="garden-name" href="${gardenUrl(g.id)}">${esc(g.name)}</a>
-        <p class="garden-meta">${TYPE_NAMES[g.type]} · ${esc(g.district)}${here ? ` · ${formatDistance(g.km)}` : ""}</p>
+        <p class="garden-meta">${TYPE_NAMES[g.type]} · ${esc(placeName(g))}${g.km != null ? ` · ${formatDistance(g.km)}` : ""}</p>
         ${g.example || hasGroup(g) ? `<p class="garden-tags">${hasGroup(g) ? '<span class="tag">Has a group</span>' : ""}
           ${g.example ? '<span class="tag">Example</span>' : ""}</p>` : ""}
         ${map ? `<button type="button" class="button-secondary small-button" data-fly="${esc(g.id)}">Show on map</button>` : ""}
@@ -363,7 +391,7 @@ function renderGardens() {
     for (const g of list) {
       const colour = g.type === "c" ? "#2E7D32" : "#A0521D";
       const marker = L.circleMarker([g.lat, g.lon], { radius: 6, color: "#1F271D", weight: 1, fillColor: colour, fillOpacity: 0.9 })
-        .bindPopup(`<strong>${esc(g.name)}</strong><br>${TYPE_NAMES[g.type]} · ${esc(g.district)}<br><a href="${gardenUrl(g.id)}">Open this garden</a>`)
+        .bindPopup(`<strong>${esc(g.name)}</strong><br>${TYPE_NAMES[g.type]} · ${esc(placeName(g))}<br><a href="${gardenUrl(g.id)}">Open this garden</a>`)
         .addTo(markers);
       markerById.set(g.id, marker);
     }
@@ -429,6 +457,7 @@ function renderGardenPage() {
   const details = `
     <dl class="facts">
       <dt>Type</dt><dd>${TYPE_NAMES[garden.type]}</dd>
+      ${garden.area && garden.area !== garden.district ? `<dt>Neighbourhood</dt><dd>${esc(garden.area)}</dd>` : ""}
       <dt>District</dt><dd>${esc(garden.district)}</dd>
       ${garden.postcode ? `<dt>Postcode</dt><dd>${esc(garden.postcode)}</dd>` : ""}
       ${garden.website ? `<dt>Website</dt><dd><a href="${esc(garden.website)}" target="_blank" rel="noopener">${esc(garden.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a></dd>` : ""}
@@ -544,6 +573,7 @@ function renderGardenPage() {
   function drawMemberView(details, group, status) {
     const isOwner = status === "owner";
     const me = group.members.find((m) => m.isMe);
+    const publicByDefault = loadAppSettings().prefs.noteVisibility === "public"; // a setting in the app
     const myNotes = loadNotes().sort((a, b) => b.date.localeCompare(a.date));
     const notes = [...group.notes].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
 
@@ -582,8 +612,8 @@ function renderGardenPage() {
               </select></div>` : ""}
             <fieldset class="choice">
               <legend>Who can read it?</legend>
-              <label><input type="radio" name="visibility" value="members" checked> Members only</label>
-              <label><input type="radio" name="visibility" value="public"> Public: anyone, without joining</label>
+              <label><input type="radio" name="visibility" value="members"${publicByDefault ? "" : " checked"}> Members only</label>
+              <label><input type="radio" name="visibility" value="public"${publicByDefault ? " checked" : ""}> Public: anyone, without joining</label>
             </fieldset>
             <div class="field">
               <label for="post-photo">Photo (optional)</label>

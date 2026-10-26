@@ -486,6 +486,32 @@ button:focus-visible{
     background-color: rgba(143, 179, 122, 0.15);
 }
 
+/* ---------- Home: the mobile app box with its QR code ---------- */
+.app-promo{
+    max-width: 65ch;
+    margin: 40px auto;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+}
+.app-promo img{
+    flex: none;
+    border-radius: 8px;
+}
+.app-promo h2{
+    margin-top: 0;
+}
+@media (max-width: 600px){
+    .app-promo{
+        flex-direction: column;
+        text-align: center;
+        margin: 24px 16px;
+    }
+}
+
 /* ---------- Home: FAQ ---------- */
 .faq{
     max-width: 65ch;

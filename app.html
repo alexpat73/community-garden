@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Community Garden app</title>
+    <meta name="description" content="What to sow, plant and harvest in a German allotment, your garden notes and your garden group.">
+    <meta name="theme-color" content="#1F271D">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="apple-touch-icon" href="images/app-icon-180.png">
+    <meta name="apple-mobile-web-app-title" content="Garden">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mobile.css">
+    <link rel="preload" href="font/urbanist-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+<body class="app" data-page="app">
+    <div class="phone" id="phone">
+
+        <!-- Welcome: first visit, or after logging out -->
+        <section class="welcome" id="welcome" hidden>
+            <svg class="welcome-logo" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#seedling"></use></svg>
+            <h1 id="welcome-title">Community Garden</h1>
+            <p class="tagline">New to your allotment and the last gardener left no notes? Pick a month to see what to sow, plant and harvest in a German garden, and keep your own notes so the next person isn't starting from zero.</p>
+            <form id="welcome-form" class="note-form" novalidate>
+                <div class="field">
+                    <label for="welcome-name">What should we call you?</label>
+                    <input type="text" id="welcome-name" maxlength="40" required autocomplete="given-name"
+                           placeholder="A first name or nickname is fine" data-error="Write a name to get started." aria-describedby="welcome-name-error">
+                    <p class="field-error" id="welcome-name-error"></p>
+                </div>
+                <div class="field">
+                    <label for="welcome-district">Your district (optional)</label>
+                    <select id="welcome-district"><option value="">Not sure yet</option></select>
+                </div>
+                <button type="submit">Get started</button>
+                <p class="form-status" id="welcome-status" role="status"></p>
+            </form>
+            <p class="small">Prototype: no account and no password. Everything stays on this phone.</p>
+        </section>
+
+        <main class="screens" id="screens" hidden>
+
+            <!-- ===== Home ===== -->
+            <section class="screen" id="tab-home" aria-labelledby="greeting">
+                <header class="hero">
+                    <h1 id="greeting">Welcome</h1>
+                    <p class="tagline">New to your allotment and the last gardener left no notes? Pick a month to see what to sow, plant and harvest in a German garden, and keep your own notes so the next person isn't starting from zero.</p>
+                    <p class="month-chip" id="month-chip"></p>
+                </header>
+
+                <section class="card" aria-labelledby="weather-title">
+                    <h2 id="weather-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#cloud-sun"></use></svg> This week's weather</h2>
+                    <div class="field inline-field">
+                        <label for="city">Weather in</label>
+                        <select id="city"></select>
+                    </div>
+                    <p class="forecast-summary" id="forecast-summary" role="status"></p>
+                    <table class="forecast" id="forecast"></table>
+                    <p class="small">Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a></p>
+                </section>
+
+                <div class="quick-actions">
+                    <button type="button" id="update-garden"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#pen-to-square"></use></svg> Update garden</button>
+                    <button type="button" class="button-secondary" id="photo-note"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#camera"></use></svg> Photo note</button>
+                </div>
+
+                <section class="card" aria-labelledby="jobs-title">
+                    <h2 id="jobs-title">This month's jobs</h2>
+                    <p class="jobs-progress" id="jobs-progress" aria-live="polite"></p>
+                    <ul class="checklist" id="jobs-list"></ul>
+                </section>
+
+                <section class="card" aria-labelledby="season-title">
+                    <h2 id="season-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#seedling"></use></svg> What's in season</h2>
+                    <div id="season"></div>
+                    <h3>Browse the months</h3>
+                    <div class="month-strip" id="month-strip"></div>
+                </section>
+
+                <section class="card" aria-labelledby="updates-title">
+                    <h2 id="updates-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#bell"></use></svg> Your garden community</h2>
+                    <div id="community-updates"></div>
+                </section>
+
+                <section class="card" id="my-notes-card" aria-labelledby="notes-title">
+                    <h2 id="notes-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#note-sticky"></use></svg> My notes</h2>
+                    <ul class="notes-list" id="app-notes"></ul>
+                    <div class="button-row">
+                        <button type="button" id="add-note">Add a note</button>
+                        <button type="button" class="button-secondary" id="all-notes">See all</button>
+                    </div>
+                </section>
+
+                <section class="card" id="game-card" aria-labelledby="game-title" hidden>
+                    <h2 id="game-title">This month's mini-game</h2>
+                    <div class="harvest-spot" id="harvest-spot"></div>
+                </section>
+
+                <section class="card" aria-labelledby="suggest-title">
+                    <h2 id="suggest-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#lightbulb"></use></svg> Suggestion box</h2>
+                    <p>Missing something, or found a problem? Tell us.</p>
+                    <form id="suggest-form" class="note-form" novalidate>
+                        <div class="field">
+                            <label for="suggest-topic">Topic</label>
+                            <select id="suggest-topic">
+                                <option>Idea</option>
+                                <option>Problem</option>
+                                <option>Something's missing</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="suggest-text">Your suggestion</label>
+                            <textarea id="suggest-text" rows="3" maxlength="500" required placeholder="What would make this app better for you?"
+                                      data-error="Write your suggestion first." aria-describedby="suggest-text-count suggest-text-error"></textarea>
+                            <p class="char-count" id="suggest-text-count">0 / 500 characters</p>
+                            <p class="field-error" id="suggest-text-error"></p>
+                        </div>
+                        <button type="submit">Send</button>
+                        <p class="form-status" id="suggest-status" role="status"></p>
+                    </form>
+                </section>
+            </section>
+
+            <!-- ===== Explore ===== -->
+            <section class="screen explore" id="tab-explore" aria-labelledby="explore-title" hidden>
+                <h1 class="visually-hidden" id="explore-title">Explore gardens</h1>
+                <div class="explore-bar">
+                    <div class="search-row">
+                        <svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#magnifying-glass"></use></svg>
+                        <label class="visually-hidden" for="explore-search">Search gardens</label>
+                        <input type="search" id="explore-search" placeholder="District, neighbourhood or postcode" enterkeyhint="search">
+                        <button type="button" class="icon-button" id="explore-near" aria-label="Gardens near me">
+                            <svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#location-crosshairs"></use></svg>
+                        </button>
+                    </div>
+                    <div class="chips" role="group" aria-label="Show">
+                        <button type="button" class="chip" data-type="all" aria-pressed="true">All</button>
+                        <button type="button" class="chip" data-type="c" aria-pressed="false">Community</button>
+                        <button type="button" class="chip" data-type="a" aria-pressed="false">Allotment</button>
+                        <button type="button" class="chip" data-type="group" aria-pressed="false">With a group</button>
+                    </div>
+                    <p class="form-status" id="explore-status" role="status"></p>
+                </div>
+                <div class="explore-map">
+                    <!-- The map loads only after a tap (or automatically, if allowed in Settings) -->
+                    <div class="map-consent" id="map-consent">
+                        <svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#map-location-dot"></use></svg>
+                        <p>Explore uses a street map from OpenStreetMap. Their server only sees your visit once you load it.</p>
+                        <button type="button" id="load-map">Load map</button>
+                        <label class="check-row"><input type="checkbox" id="always-map"> Always load the map (change in Settings)</label>
+                    </div>
+                    <div id="app-map" hidden></div>
+                </div>
+                <section class="results-panel" id="results-panel" aria-label="Gardens">
+                    <button type="button" class="results-handle" id="results-toggle" aria-expanded="false">
+                        <span id="explore-count"></span>
+                    </button>
+                    <ul class="explore-results" id="explore-results"></ul>
+                    <button type="button" class="button-secondary" id="explore-more" hidden>Show more</button>
+                </section>
+            </section>
+
+            <!-- ===== Settings ===== -->
+            <section class="screen" id="tab-settings" aria-labelledby="settings-title" hidden>
+                <h1 id="settings-title">Settings</h1>
+
+                <section class="card" aria-labelledby="profile-title">
+                    <h2 id="profile-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#user"></use></svg> Profile</h2>
+                    <form id="app-profile" class="note-form" novalidate>
+                        <div class="profile-photo">
+                            <div class="photo-preview" id="app-profile-preview"></div>
+                            <div class="field">
+                                <label for="app-profile-photo">Photo (optional)</label>
+                                <input type="file" id="app-profile-photo">
+                                <p class="form-status" id="app-profile-photo-status" role="status"></p>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="app-profile-name">Name</label>
+                            <input type="text" id="app-profile-name" maxlength="40" required data-error="Write the name others will see." aria-describedby="app-profile-name-error">
+                            <p class="field-error" id="app-profile-name-error"></p>
+                        </div>
+                        <div class="field">
+                            <label for="app-profile-district">District</label>
+                            <select id="app-profile-district"><option value="">Not sure yet</option></select>
+                        </div>
+                        <button type="submit" id="app-profile-submit">Save profile</button>
+                        <p class="form-status" id="app-profile-status" role="status"></p>
+                    </form>
+                </section>
+
+                <section class="card" aria-labelledby="permissions-title">
+                    <h2 id="permissions-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#lock"></use></svg> Permissions</h2>
+                    <label class="switch-row"><span>Use my location for "Near me"<span class="small">It never leaves this phone.</span></span><input type="checkbox" class="switch" id="pref-near-me"></label>
+                    <label class="switch-row"><span>Load the street map automatically<span class="small">Otherwise Explore asks first.</span></span><input type="checkbox" class="switch" id="pref-auto-map"></label>
+                    <label class="switch-row"><span>Sounds in the mini-games</span><input type="checkbox" class="switch" id="pref-sounds"></label>
+                    <fieldset class="choice">
+                        <legend>New notes in my garden groups are</legend>
+                        <label><input type="radio" name="pref-visibility" value="members"> Members only</label>
+                        <label><input type="radio" name="pref-visibility" value="public"> Public</label>
+                    </fieldset>
+                    <p class="form-status" id="permissions-status" role="status"></p>
+                </section>
+
+                <section class="card" aria-labelledby="faq-title">
+                    <h2 id="faq-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#circle-question"></use></svg> Questions</h2>
+                    <div class="faq" id="app-faq"></div>
+                </section>
+
+                <section class="card" aria-labelledby="install-title">
+                    <h2 id="install-title">Install the app</h2>
+                    <p id="install-text">Add it to your home screen: it opens full screen and works without signal on your plot.</p>
+                    <ul class="small">
+                        <li><strong>iPhone:</strong> tap Share, then "Add to Home Screen".</li>
+                        <li><strong>Android:</strong> tap the menu, then "Install app".</li>
+                    </ul>
+                    <button type="button" id="install-app" hidden>Install</button>
+                </section>
+
+                <section class="card" aria-labelledby="data-title">
+                    <h2 id="data-title">Your data</h2>
+                    <p>Everything is saved only on this phone.</p>
+                    <div class="button-row">
+                        <button type="button" class="button-secondary" id="download-notes">Download my notes</button>
+                        <button type="button" class="button-secondary" id="reset-prototype">Reset prototype data</button>
+                    </div>
+                </section>
+
+                <section class="card" aria-labelledby="account-title">
+                    <h2 id="account-title">Account</h2>
+                    <button type="button" class="button-secondary wide" id="logout"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#right-from-bracket"></use></svg> Log out</button>
+                    <p class="small">Logging out keeps your notes and groups on this phone.</p>
+                    <button type="button" class="button-danger wide" id="delete-profile"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#trash-can"></use></svg> Delete profile</button>
+                    <p class="small">Deleting erases your name, notes, garden groups, jobs, suggestions and settings from this phone. Download your notes first if you want to keep them.</p>
+                </section>
+
+                <section class="card" aria-labelledby="about-title">
+                    <h2 id="about-title">About</h2>
+                    <p>A class project for GUI Design &amp; Web Optimization. Prefer a big screen? <a href="index.html">Open the desktop site</a>.</p>
+                    <p class="small">Icons: <a href="https://fontawesome.com">Font Awesome Free</a> (CC BY 4.0). Garden data and maps: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. Weather: Open-Meteo.com. Font: Urbanist (SIL OFL). Map: Leaflet. iPhone photos: heic-to (LGPL). Minecraft textures and sounds © Mojang Studios.</p>
+                </section>
+            </section>
+        </main>
+
+        <nav class="tabbar" id="tabbar" aria-label="App" hidden>
+            <a href="#home" data-tab="home"><svg aria-hidden="true"><use href="vendor/fontawesome/icons.svg#house"></use></svg><span>Home</span></a>
+            <a href="#explore" data-tab="explore"><svg aria-hidden="true"><use href="vendor/fontawesome/icons.svg#compass"></use></svg><span>Explore</span></a>
+            <a href="#settings" data-tab="settings"><svg aria-hidden="true"><use href="vendor/fontawesome/icons.svg#gear"></use></svg><span>Settings</span></a>
+        </nav>
+
+        <!-- One bottom sheet, reused for plants, months, notes, gardens and "Update garden" -->
+        <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+        <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+            <div class="sheet-head">
+                <h2 id="sheet-title"></h2>
+                <button type="button" class="icon-button" id="sheet-close" aria-label="Close">
+                    <svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#xmark"></use></svg>
+                </button>
+            </div>
+            <div class="sheet-body" id="sheet-body"></div>
+        </section>
+    </div>
+    <p class="frame-note">This is the mobile app. On a phone it fills the screen. <a href="index.html">Back to the desktop site</a></p>
+
+    <script src="data.js"></script>
+    <script src="gardens-data.js"></script>
+    <script src="community-demo.js"></script>
+    <script src="app.js"></script>
+    <script src="community.js"></script>
+    <script src="mobile.js"></script>
+</body>
+</html>
