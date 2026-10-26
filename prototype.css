@@ -1,0 +1,458 @@
+/* ============================================================
+   The lo-fi prototype page (prototype.html). Wireframes are grey "pencil on paper"
+   on purpose: no colours, pictures or real text, so layout and flow stand out.
+   ============================================================ */
+
+.wf-page{
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 16px 40px;
+}
+.wf-section{
+    margin: 40px 0;
+}
+.wf-layout{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 24px;
+    align-items: start;
+}
+.wf-layout.phone-layout{
+    grid-template-columns: 340px minmax(0, 1fr);
+}
+
+/* ---------- The paper and the pencil ---------- */
+.wf{
+    --ink: #333333;
+    --pencil: #9A9A9A;
+    --soft: #DAD6CC;
+    --paper: #F4F1EA;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.35;
+}
+.wf [data-n]{
+    position: relative;
+}
+.wf [data-n]::before{ /* the numbered notes, matching the lists beside the wireframe (top right, clear of the text) */
+    content: attr(data-n);
+    position: absolute;
+    top: -8px;
+    right: -4px;
+    z-index: 2;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background-color: var(--ink);
+    color: var(--paper);
+    font-size: 11px;
+    font-weight: 700;
+}
+.wf-line{
+    height: 7px;
+    margin: 6px 0;
+    border-radius: 4px;
+    background-color: var(--soft);
+}
+.wf-line.strong{ background-color: var(--pencil); }
+.wf-line.thin{ height: 5px; }
+.wf-line.bullet{ margin-left: 14px; }
+.wf-h{ /* a heading */
+    min-height: 12px;
+    margin: 10px 0 8px;
+    border-radius: 4px;
+    background-color: var(--pencil);
+    color: var(--paper);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 0 6px;
+}
+.w20{ width: 20%; } .w30{ width: 30%; } .w40{ width: 40%; } .w50{ width: 50%; }
+.w60{ width: 60%; } .w70{ width: 70%; } .w80{ width: 80%; } .w90{ width: 90%; }
+.wf-label{
+    margin: 8px 0 3px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.wf-box{ /* a slightly wobbly, hand-drawn box */
+    border: 2px solid var(--ink);
+    border-radius: 10px 4px 9px 5px / 5px 9px 4px 10px;
+    padding: 8px 10px;
+    margin: 12px 0;
+}
+.wf-box.wf-dashed{ border-style: dashed; }
+.wf-box.small{ padding: 4px 8px; margin: 6px 0; font-size: 12px; }
+.wf-img{ /* a picture placeholder: a box with a cross */
+    display: grid;
+    place-items: center;
+    min-height: 50px;
+    border: 2px solid var(--pencil);
+    color: var(--pencil);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background:
+        linear-gradient(to top right, transparent calc(50% - 1px), var(--soft) calc(50% - 1px), var(--soft) calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to top left, transparent calc(50% - 1px), var(--soft) calc(50% - 1px), var(--soft) calc(50% + 1px), transparent calc(50% + 1px));
+}
+.wf-square{ width: 110px; height: 110px; }
+.wf-game{ height: 90px; margin: 8px auto; max-width: 160px; }
+.wf-qr{ flex: none; width: 70px; height: 70px; }
+.wf-photo{ height: 60px; max-width: 120px; }
+.wf-photo.small{ height: 40px; width: 60px; }
+.wf-map{ min-height: 280px; align-content: end; padding: 12px; }
+.wf-map.tall{ min-height: 170px; }
+.wf-input{
+    min-height: 22px;
+    margin: 3px 0;
+    padding: 2px 6px;
+    border: 1.5px solid var(--pencil);
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.6);
+    color: var(--pencil);
+    font-size: 11px;
+}
+.wf-select::after{ content: " ▾"; float: right; }
+.wf-textarea{ min-height: 44px; }
+.wf-error{
+    margin: 4px 0;
+    font-size: 11px;
+    font-weight: 700;
+}
+.wf-tag{
+    display: inline-block;
+    padding: 0 6px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+}
+.wf-row{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+}
+.wf-row.two > *{ flex: 1; }
+.wf-center{ justify-content: center; text-align: center; margin: 10px 0; }
+.wf-grow{ flex: 1; min-width: 0; }
+.wf-narrow{ max-width: 520px; margin: 12px auto; }
+.wf-grid-3{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 520px;
+    margin: 16px auto;
+}
+.wf-grid-2{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: start;
+}
+.wf-grid-2.wide-left{ grid-template-columns: 1.5fr 1fr; }
+.wf-acc{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--soft);
+}
+.wf-acc .wf-line{ margin: 0; }
+.wf-facts{
+    display: grid;
+    grid-template-columns: 30% 1fr;
+    gap: 5px 10px;
+}
+.wf-facts span{ height: 6px; border-radius: 3px; background-color: var(--soft); }
+.wf-facts span:nth-child(odd){ background-color: var(--pencil); }
+.wf-table{ display: grid; gap: 4px; }
+.wf-table span{ height: 8px; border-bottom: 1px solid var(--soft); }
+.wf-calendar{
+    display: grid;
+    grid-template-columns: 2fr repeat(12, 1fr);
+    margin: 12px 0;
+    border-left: 1px solid var(--pencil);
+    border-top: 1px solid var(--pencil);
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+}
+.wf-calendar span{
+    min-height: 16px;
+    border-right: 1px solid var(--pencil);
+    border-bottom: 1px solid var(--pencil);
+}
+.wf-calendar .head{ background-color: var(--soft); }
+.wf-calendar .name{ background: linear-gradient(var(--soft), var(--soft)) center / 70% 5px no-repeat; }
+.wf-calendar .now{ background-color: var(--pencil); color: var(--paper); }
+.wf-list-item{
+    padding: 4px 0 6px;
+    border-bottom: 1px solid var(--soft);
+}
+.wf-avatar{
+    flex: none;
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--pencil);
+    border-radius: 50%;
+}
+.wf-avatar.big{ width: 48px; height: 48px; }
+.wf-radio{
+    width: 12px;
+    height: 12px;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+}
+.wf-checks{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+}
+.wf-checks span{ display: flex; align-items: center; gap: 4px; height: 12px; }
+.wf-checks span::before{ content: ""; flex: none; width: 9px; height: 9px; border: 1.5px solid var(--ink); border-radius: 2px; }
+.wf-checks span::after{ content: ""; flex: 1; height: 6px; border-radius: 3px; background-color: var(--soft); }
+.wf-check-line,
+.wf-switch-line{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+}
+.wf-check-line > span{ flex: none; width: 12px; height: 12px; border: 1.5px solid var(--ink); border-radius: 2px; }
+.wf-switch-line{ justify-content: space-between; }
+.wf-switch-line > span{ flex: none; width: 28px; height: 14px; border: 1.5px solid var(--ink); border-radius: 999px; position: relative; }
+.wf-switch-line > span::after{ content: ""; position: absolute; top: 1px; left: 1px; width: 9px; height: 9px; border-radius: 50%; background-color: var(--ink); }
+.wf-switch-line > span.on{ background-color: var(--soft); }
+.wf-switch-line > span.on::after{ left: auto; right: 1px; }
+.wf-chips{ display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+.wf-chips span{ width: 44px; height: 16px; border: 1.5px solid var(--ink); border-radius: 999px; }
+.wf-chips span.on{ background-color: var(--soft); }
+.wf-strip,
+.wf-days{
+    display: flex;
+    gap: 5px;
+    margin: 6px 0;
+    overflow: hidden;
+}
+.wf-strip span{ flex: none; width: 40px; height: 46px; border: 1.5px solid var(--pencil); border-radius: 8px; }
+.wf-strip span.now{ border: 2.5px solid var(--ink); }
+.wf-days span{ flex: none; width: 46px; height: 58px; border: 1.5px solid var(--pencil); border-radius: 8px; }
+.wf-days span.frost{ border: 2px dashed var(--ink); }
+
+/* Buttons inside the wireframes: pencil outlines, not the site's green buttons */
+.wf button{
+    font: inherit;
+    cursor: pointer;
+}
+.wf .wf-btn,
+.wf-nav button,
+.wf-tabbar button,
+.wf-card,
+.wf-result,
+.wf-link{
+    min-height: 0;
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 8px 3px 7px 4px / 4px 7px 3px 8px;
+    background-color: transparent;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+.wf .wf-btn{ display: inline-flex; align-items: center; justify-content: center; margin: 4px 0; }
+.wf .wf-btn.primary{ background-color: var(--soft); }
+.wf .wf-btn.small{ padding: 1px 8px; font-size: 11px; }
+.wf .wf-btn.danger{ border-style: dashed; }
+.wf .wf-block{ display: flex; width: 100%; margin: 6px 0; }
+.wf button:hover{ background-color: var(--soft); }
+.wf button:focus-visible{ outline: 3px solid var(--ink); outline-offset: 2px; }
+.wf-link{ border: 0; padding: 0; text-decoration: underline; }
+.wf .wf-link:hover{ background: none; }
+
+/* ---------- The desktop browser window ---------- */
+.wf-browser{
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.wf-browser-bar{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--ink);
+}
+.wf-browser-bar > span{ width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; }
+.wf-address{ flex: 1; height: 14px; margin-left: 10px; border: 1.5px solid var(--pencil); border-radius: 7px; }
+.wf-viewport{
+    position: relative; /* the FAQ button scrolls within it */
+    height: 620px;
+    overflow-y: auto;
+    padding: 6px 24px 24px;
+}
+.wf-title{
+    margin: 8px 0;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+.wf-nav{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: fit-content; /* so note A sits next to the buttons */
+    max-width: 100%;
+    margin: 0 auto 12px;
+}
+.wf-nav button{ border-color: var(--pencil); }
+.wf-nav button[aria-current="true"]{ border-color: var(--ink); background-color: var(--soft); }
+.wf-card{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    text-align: center;
+}
+.wf-card .wf-img{ height: 70px; }
+.wf-card.wf-current{ outline: 3px solid var(--ink); outline-offset: 2px; }
+.wf-result{
+    display: block;
+    width: 100%;
+    margin: 6px 0;
+    padding: 4px 8px 6px;
+    text-align: left;
+    border-width: 1.5px;
+}
+.wf-result .wf-line{ display: block; }
+
+/* ---------- The phone ---------- */
+.wf-phone{
+    position: relative; /* bottom sheets sit inside the phone */
+    width: 320px;
+    height: 640px;
+    border: 4px solid var(--ink);
+    border-radius: 36px;
+    padding: 18px 12px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.wf-phone-screens{
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 6px 12px;
+}
+.wf-welcome{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100%;
+    padding-top: 60px;
+}
+.wf-explore{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.wf-panel{
+    border: 2px solid var(--ink);
+    border-radius: 14px 14px 0 0;
+    padding: 4px 10px 8px;
+}
+.wf-handle{ width: 40px; height: 4px; margin: 4px auto; border-radius: 2px; background-color: var(--pencil); }
+.wf-tabbar{
+    flex: none;
+    display: flex;
+    border-top: 2px solid var(--ink);
+    margin: 0 -12px;
+    padding: 6px 12px 14px;
+}
+.wf-tabbar button{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 11px;
+}
+.wf-tabbar button > span{ width: 18px; height: 18px; border: 2px solid var(--ink); border-radius: 5px; }
+.wf-tabbar button[aria-current="true"]{ background-color: var(--soft); }
+.wf-sheet{
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 3;
+    max-height: 78%;
+    overflow-y: auto;
+    padding: 10px 16px 16px;
+    border-top: 3px solid var(--ink);
+    border-radius: 20px 20px 0 0;
+    background-color: var(--paper);
+    box-shadow: 0 -200px 0 200px rgba(0, 0, 0, 0.25); /* dims the screen behind */
+}
+.wf-sheet .wf-row:first-child{ justify-content: space-between; }
+
+/* ---------- The notes beside the wireframes ---------- */
+.wf-notes{
+    font-size: 0.95em;
+}
+.wf-notes h3{
+    margin-top: 0;
+}
+.wf-notes-note{
+    opacity: 0.85;
+}
+.wf-legend{
+    list-style: none;
+    padding: 0;
+    counter-reset: note;
+}
+.wf-legend li{
+    counter-increment: note;
+    position: relative;
+    padding: 0 0 10px 30px;
+}
+.wf-legend li::before{
+    content: counter(note);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background-color: var(--text);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 1000px){
+    .wf-layout,
+    .wf-layout.phone-layout{
+        grid-template-columns: 1fr;
+    }
+    .wf-phone{
+        margin: 0 auto;
+    }
+}
+@media (max-width: 600px){
+    .wf-viewport{ padding: 6px 10px 16px; }
+    .wf-grid-2,
+    .wf-grid-2.wide-left{ grid-template-columns: 1fr; }
+    .wf-phone{ width: 100%; max-width: 320px; }
+}

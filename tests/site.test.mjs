@@ -55,11 +55,14 @@ const cropOf = (page) => page.evaluate(() => getComputedStyle(document.querySele
 
 // ---------- every page loads cleanly ----------
 for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "notes.html", "gardens.html",
-  "garden.html?id=demo-wedding", "garden.html?id=w332251381", "garden.html?id=does-not-exist", "app.html"]) {
+  "garden.html?id=demo-wedding", "garden.html?id=w332251381", "garden.html?id=does-not-exist", "app.html", "prototype.html"]) {
   const { page, errors } = await open(p);
   await page.waitForTimeout(400);
   check(errors.length === 0, `${p}: no errors ${errors.join(" | ")}`);
-  if (p !== "app.html") check(await page.locator('.navbar a[href="index.html#faq"]').count() === 1, `${p}: FAQ link in nav`); // the app has a tab bar instead
+  if (p !== "app.html") { // the app has a tab bar instead
+    check(await page.locator('.navbar a[href="index.html#faq"]').count() === 1, `${p}: FAQ link in nav`);
+    check(await page.locator('.navbar a[href="index.html#faq"] + a, .navbar li:has(a[href="index.html#faq"]) + li a[href="prototype.html"]').count() === 1, `${p}: Lo-fi Prototype tab right after FAQ`);
+  }
   await page.close();
 }
 
@@ -557,6 +560,40 @@ const distances = async (page, selector) => (await page.locator(selector).allTex
   check(await page.isVisible("#welcome") && (await page.textContent("#welcome-title")) === "Community Garden", "PWA: the app still opens with no internet");
   await ctx.setOffline(false);
   await ctx.close();
+}
+
+// ---------- The lo-fi prototype page ----------
+{
+  const { page } = await open("prototype.html");
+  const legend = (frame) => page.locator(`[data-wf-legend-for="${frame}"] [data-wf-legend]:not([hidden]) h3`).textContent();
+  const desktop = page.locator("#wf-desktop");
+  const mobile = page.locator("#wf-mobile");
+  check((await legend("wf-desktop")) === "Home" && await desktop.locator("[data-n]").count() > 20, "lo-fi: desktop wireframe starts on Home, with numbered notes");
+  await desktop.locator('.wf-nav [data-wf-go="gardens"]').click();
+  check((await legend("wf-desktop")) === "Find a garden" && (await desktop.locator("[data-wf-title]").textContent()) === "FIND A GARDEN" &&
+    await desktop.locator('.wf-nav [data-wf-go="gardens"]').getAttribute("aria-current") === "true", "lo-fi: the nav switches screens, title and notes");
+  await desktop.locator(".wf-result").first().click();
+  check((await legend("wf-desktop")) === "A garden, as a visitor", "lo-fi: a result opens the garden");
+  await desktop.locator('[data-wf-go="garden-member"]').click();
+  check((await legend("wf-desktop")) === "A garden, as a member" && await desktop.locator('.wf-nav [data-wf-go="gardens"]').getAttribute("aria-current") === "true", "lo-fi: Ask to join leads to the member view");
+  await desktop.locator('.wf-nav [data-wf-scroll="faq"]').click();
+  check((await legend("wf-desktop")) === "Home" && await desktop.locator(".wf-viewport").evaluate((v) => v.scrollTop > 100), "lo-fi: FAQ jumps down to the questions");
+  check((await legend("wf-mobile")) === "Welcome" && await mobile.locator(".wf-tabbar").isHidden(), "lo-fi: the phone starts on Welcome, without tabs");
+  await mobile.locator('[data-wf-go="m-home"]').first().click();
+  check((await legend("wf-mobile")) === "Home" && await mobile.locator(".wf-tabbar").isVisible(), "lo-fi: Get started opens Home and the tab bar");
+  await mobile.locator('[data-wf-open="sheet-update"]').first().click();
+  check((await legend("wf-mobile")) === "Update garden (sheet)" && await mobile.locator('[data-wf-sheet="sheet-update"]').isVisible(), "lo-fi: Update garden opens its sheet");
+  await mobile.locator('[data-wf-sheet="sheet-update"] [data-wf-close]').click();
+  check((await legend("wf-mobile")) === "Home", "lo-fi: closing the sheet goes back to Home's notes");
+  await mobile.locator('.wf-tabbar [data-wf-go="m-explore"]').click();
+  await mobile.locator('[data-wf-open="sheet-garden"]').first().click();
+  check((await legend("wf-mobile")) === "A garden (sheet)", "lo-fi: Explore, then a result opens the garden sheet");
+  await mobile.locator('[data-wf-sheet="sheet-garden"] [data-wf-close]').click(); // like the app, an open sheet covers the tabs
+  await mobile.locator('.wf-tabbar [data-wf-go="m-settings"]').click();
+  check((await legend("wf-mobile")) === "Settings", "lo-fi: Settings tab");
+  await mobile.locator('[data-wf-go="welcome"]').click();
+  check((await legend("wf-mobile")) === "Welcome" && await mobile.locator(".wf-tabbar").isHidden(), "lo-fi: Log out goes back to Welcome");
+  await page.close();
 }
 
 await browser.close();

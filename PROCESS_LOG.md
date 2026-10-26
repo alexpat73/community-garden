@@ -379,3 +379,45 @@ A mobile version, because people use their phones in the garden, not a laptop. I
 - Test the app on a real iPhone and Android phone, including installing it and using it offline.
 - Use the app in the interviews or usability tests (Reset between sessions).
 - Still open: card-front contrast, whether tags stay green, background image and month photos, a smaller favicon, a Lighthouse audit.
+
+
+---
+
+## Entry 6 · 26 October 2026 · Lo-fi prototype
+
+### Session goal
+
+A lo-fi prototype of what was built, as its own tab on the desktop site next to FAQ, to show the structure and flow of the design without the visual finish.
+
+### How the session went
+
+| # | What I asked the AI (summarised) | What the AI did | What I decided or changed |
+|---|---|---|---|
+| 1 | A lo-fi prototype of what was built, as a separate tab next to the FAQ tab. | Built `prototype.html`: clickable greyscale wireframes of the desktop site and the mobile app, with numbered notes for every screen. Added the "Lo-fi Prototype" tab after FAQ on all desktop pages. | — |
+| 2 | Publish it, and add this entry. | Pushed it live. | — |
+
+### What the page shows
+
+- **Desktop site:** a browser-window wireframe with its own nav.
+  - Screens: Home, a month page, All Plants, My Notes, Find a garden, and a garden as a visitor and as a member.
+  - The clicks work like the real site: a month card opens the month, a result opens the garden, "Ask to join" leads to the member view, and FAQ jumps down to the questions.
+- **Mobile app:** a phone wireframe with the three tabs. It has Welcome, Home, Explore and Settings, plus the Update garden and garden bottom sheets. Get started opens the app; Log out goes back to Welcome.
+- **Numbered notes:** every part of a screen has a number, explained beside the wireframe, and the notes change with each screen and sheet.
+
+### Design decisions and why
+
+- **Grey "pencil on paper":** no colours, photos or real text, just boxes with a cross for pictures, grey lines for text, and outlined buttons with short labels. Lo-fi keeps attention on layout, hierarchy and flow rather than on the finish.
+- **Clickable rather than static:** it shows how the screens connect, like a paper prototype you can tap through.
+- **Hand-drawn feel:** slightly uneven rounded corners (`border-radius` with different values per corner) make the boxes look sketched, without any images.
+- **Its own CSS and JS files:** `prototype.css` and `prototype.js` load only on this page, so the other pages don't download them.
+
+### Problems and fixes
+
+- **The number markers covered the first letters** of labels ("PUBLIC NOTES" became "3UBLIC NOTES"). They moved to the top-right corner of each element.
+- **Marker A floated far from the nav** it labels: the nav row now shrinks to fit its buttons.
+- **The checklist drew as black squares;** it's now a small checkbox and a line.
+- **A test, not a bug:** a test clicked a tab while a bottom sheet was open. Like the real app, the open sheet covers the tabs, so the test now closes the sheet first.
+
+### Testing
+
+24 new checks, **181 in total, all passing.** The page loads cleanly, the tab sits right after FAQ on every desktop page, and every click-through works in both wireframes, with the notes following each screen.

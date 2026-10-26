@@ -20,6 +20,7 @@ Made for the GUI Design & Web Optimization course. The brief:
 | `gardens.html` | Find a garden: about 980 real community gardens and allotment colonies in Berlin, searchable by name, district and distance, with a street map that loads on request |
 | `garden.html?id=…` | One garden and its group: public and members-only notes, members and what they grow, photos, join requests (prototype) |
 | `app.html` | The mobile app: Home, Explore and Settings tabs (see below) |
+| `prototype.html` | Lo-fi prototype: clickable greyscale wireframes of the desktop site and the mobile app, with numbered notes on every screen |
 
 **Garden groups are a prototype:** the example groups and anything you add are saved only in your browser, and join requests are answered by a pretend admin after a few seconds. "Reset prototype data" on the Gardens page brings the examples back.
 
@@ -54,6 +55,7 @@ npm test
 - `community-demo.js`: the made-up example groups, members and notes.
 - `community.js`: the Gardens and garden-group pages, the shared garden search (`findGardens`) and the photo handling (iPhone HEIC photos are converted in the browser).
 - `app.html`, `mobile.js`, `mobile.css`: the mobile app. `manifest.webmanifest` and `sw.js` make it installable and work offline.
+- `prototype.html`, `prototype.js`, `prototype.css`: the lo-fi prototype page.
 - `app.js`: the logic for every page.
 - `style.css`: all styles.
 - `font/`: the Urbanist web font and its licence.

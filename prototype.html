@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lo-fi Prototype · Community Garden</title>
+    <link rel="icon" type="image/svg+xml" href="images/PvZ_1_Peashooter.svg">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="prototype.css">
+    <link rel="preload" href="font/urbanist-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+<body data-page="prototype">
+    <h1>LO-FI PROTOTYPE</h1>
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="month.html">This Month</a></li>
+            <li><a href="plants.html">All Plants</a></li>
+            <li><a href="notes.html">My Notes</a></li>
+            <li><a href="gardens.html">Gardens</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+            <li><a href="prototype.html" aria-current="page">Lo-fi Prototype</a></li>
+        </ul>
+    </nav>
+
+    <p class="intro">Low-fidelity wireframes of what was built: grey boxes instead of pictures and lines instead of text, so the layout and the flow stand out rather than the colours. Click the tabs, cards and buttons inside each wireframe to move between screens; the numbers match the notes beside it.</p>
+
+    <div class="wf-page">
+
+        <!-- ================= Desktop site ================= -->
+        <section class="wf-section" aria-labelledby="wf-desktop-title">
+            <h2 id="wf-desktop-title">Desktop site</h2>
+            <div class="wf-layout">
+                <div class="wf wf-browser" id="wf-desktop" data-wf-frame aria-label="Wireframe of the desktop site">
+                    <div class="wf-browser-bar" aria-hidden="true"><span></span><span></span><span></span><div class="wf-address"></div></div>
+                    <div class="wf-viewport">
+                        <div class="wf-title" data-wf-title>COMMUNITY GARDEN</div>
+                        <div class="wf-nav" data-n="A">
+                            <button type="button" data-wf-go="home">Home</button>
+                            <button type="button" data-wf-go="month">This Month</button>
+                            <button type="button" data-wf-go="plants">All Plants</button>
+                            <button type="button" data-wf-go="notes">My Notes</button>
+                            <button type="button" data-wf-go="gardens">Gardens</button>
+                            <button type="button" data-wf-go="home" data-wf-scroll="faq">FAQ</button>
+                        </div>
+
+                        <!-- Home -->
+                        <div class="wf-screen" data-wf-screen="home" data-wf-label="COMMUNITY GARDEN">
+                            <div class="wf-narrow" data-n="1"><div class="wf-line w90"></div><div class="wf-line w80"></div><div class="wf-line w40"></div></div>
+                            <div class="wf-box wf-narrow" data-n="2">
+                                <div class="wf-label">Right now</div>
+                                <div class="wf-line w50"></div>
+                                <div class="wf-img wf-game">mini-game</div>
+                                <div class="wf-row"><span class="wf-label">Weather in</span><div class="wf-input w30"></div></div>
+                                <div class="wf-line w60 strong"></div>
+                                <div class="wf-table" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                            </div>
+                            <div class="wf-grid-3" data-n="3">
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>January</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>February</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>March</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>April</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>May</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>June</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>…</button>
+                                <button type="button" class="wf-card wf-current" data-wf-go="month"><span class="wf-img"></span>This month</button>
+                                <button type="button" class="wf-card" data-wf-go="month"><span class="wf-img"></span>December</button>
+                            </div>
+                            <div class="wf-box wf-narrow wf-row" data-n="4">
+                                <div class="wf-img wf-qr">QR</div>
+                                <div class="wf-grow"><div class="wf-h w40"></div><div class="wf-line w90"></div><div class="wf-line w70"></div><span class="wf-btn">Open the mobile app</span></div>
+                            </div>
+                            <div class="wf-narrow" data-n="5" data-wf-anchor="faq">
+                                <div class="wf-h w50"></div>
+                                <div class="wf-acc">▸ <div class="wf-line w60"></div></div>
+                                <div class="wf-acc">▸ <div class="wf-line w70"></div></div>
+                                <div class="wf-acc">▸ <div class="wf-line w50"></div></div>
+                                <div class="wf-acc">▸ <div class="wf-line w60"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- One month -->
+                        <div class="wf-screen" data-wf-screen="month" data-wf-label="OCTOBER" hidden>
+                            <div class="wf-row wf-center" data-n="1"><button type="button" class="wf-btn" data-wf-go="month">‹ Previous month</button><button type="button" class="wf-btn" data-wf-go="month">Next month ›</button></div>
+                            <div class="wf-center" data-n="2"><div class="wf-img wf-square">month card</div></div>
+                            <div class="wf-row wf-center" data-n="3"><span class="wf-btn primary">Sow</span><span class="wf-btn primary">Plant</span><span class="wf-btn primary">Harvest</span></div>
+                            <div class="wf-narrow">
+                                <div data-n="4"><div class="wf-h w50"></div><div class="wf-facts"><span></span><span></span><span></span><span></span><span></span></div></div>
+                                <div data-n="5"><div class="wf-h w30"></div><div class="wf-line w80 bullet"></div><div class="wf-line w70 bullet"></div><div class="wf-line w60 bullet"></div></div>
+                                <div data-n="6"><div class="wf-h w30"></div><div class="wf-row"><div class="wf-line w30"></div><span class="wf-tag">easy</span></div><div class="wf-row"><div class="wf-line w40"></div><span class="wf-tag">easy</span></div><div class="wf-line w30"></div></div>
+                                <div data-n="7"><div class="wf-h w40"></div><div class="wf-line w70"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- All plants -->
+                        <div class="wf-screen" data-wf-screen="plants" data-wf-label="ALL PLANTS" hidden>
+                            <div class="wf-narrow" data-n="1"><div class="wf-line w60"></div><div class="wf-line w80 strong"></div></div>
+                            <div class="wf-calendar" data-n="2" aria-hidden="true">
+                                <span class="head"></span><span class="head"></span><span class="head"></span><span class="head"></span><span class="head"></span><span class="head"></span><span class="head"></span><span class="head"></span><span class="head"></span><span class="head now"></span><span class="head"></span><span class="head"></span><span class="head"></span>
+                                <span class="name"></span><span></span><span></span><span>I</span><span>I</span><span>P</span><span>P</span><span>H</span><span>H</span><span class="now">H</span><span>H</span><span></span><span></span>
+                                <span class="name"></span><span></span><span></span><span>S</span><span>S</span><span>S</span><span>H</span><span>H</span><span>H</span><span class="now">H</span><span></span><span></span><span></span>
+                                <span class="name"></span><span></span><span></span><span></span><span></span><span>S</span><span>S</span><span>S</span><span>H</span><span class="now">H</span><span></span><span></span><span></span>
+                                <span class="name"></span><span>H</span><span>H</span><span></span><span></span><span></span><span></span><span></span><span>S</span><span class="now">H</span><span>H</span><span>H</span><span>H</span>
+                            </div>
+                            <div class="wf-grid-2" data-n="3">
+                                <div class="wf-box"><div class="wf-h w40"></div><div class="wf-facts"><span></span><span></span><span></span><span></span></div><div class="wf-line w90"></div></div>
+                                <div class="wf-box wf-dashed"><div class="wf-h w40"></div><div class="wf-facts"><span></span><span></span><span></span><span></span></div><div class="wf-line w90"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- My notes -->
+                        <div class="wf-screen" data-wf-screen="notes" data-wf-label="MY GARDEN NOTES" hidden>
+                            <div class="wf-narrow">
+                                <div class="wf-line w90"></div><div class="wf-line w60"></div>
+                                <div class="wf-line w30" data-n="1"></div>
+                                <div data-n="2">
+                                    <div class="wf-label">Date</div><div class="wf-input"></div>
+                                    <div class="wf-label">What happened</div><div class="wf-input wf-select">Choose one…</div>
+                                    <div class="wf-label">Plant</div><div class="wf-input"></div>
+                                    <div class="wf-label">Note</div><div class="wf-input wf-textarea"></div><div class="wf-line w20 thin"></div>
+                                </div>
+                                <div class="wf-error" data-n="3">! Write which plant this is about.</div>
+                                <div class="wf-row" data-n="4"><span class="wf-btn primary">Save note</span><span class="wf-btn">Download notes</span><span class="wf-btn">Load notes from file</span></div>
+                                <div data-n="5">
+                                    <div class="wf-list-item"><div class="wf-line w40 strong"></div><div class="wf-line w70"></div><span class="wf-btn small">Delete</span></div>
+                                    <div class="wf-list-item"><div class="wf-line w30 strong"></div><div class="wf-line w60"></div><span class="wf-btn small">Delete</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Find a garden -->
+                        <div class="wf-screen" data-wf-screen="gardens" data-wf-label="FIND A GARDEN" hidden>
+                            <div class="wf-box wf-dashed wf-row" data-n="1"><div class="wf-line w60"></div><span class="wf-btn small">Reset prototype data</span></div>
+                            <div class="wf-box" data-n="2"><div class="wf-h w20"></div><div class="wf-row"><div class="wf-line w30"></div><span class="wf-tag">Member</span></div></div>
+                            <div class="wf-grid-2">
+                                <div>
+                                    <div data-n="3">
+                                        <div class="wf-label">Search</div><div class="wf-input">Name, neighbourhood or postcode</div>
+                                        <div class="wf-row"><div class="wf-grow"><div class="wf-label">District</div><div class="wf-input wf-select"></div></div><div class="wf-grow"><div class="wf-label">Type</div><div class="wf-input wf-select"></div></div></div>
+                                        <span class="wf-btn primary wf-block">Near me</span>
+                                    </div>
+                                    <div data-n="4">
+                                        <div class="wf-line w40 thin"></div>
+                                        <button type="button" class="wf-result" data-wf-go="garden"><span class="wf-line w60 strong"></span><span class="wf-line w40"></span><span class="wf-tag">Has a group</span></button>
+                                        <button type="button" class="wf-result" data-wf-go="garden"><span class="wf-line w50 strong"></span><span class="wf-line w40"></span></button>
+                                        <button type="button" class="wf-result" data-wf-go="garden"><span class="wf-line w70 strong"></span><span class="wf-line w30"></span></button>
+                                        <span class="wf-btn">Show more</span>
+                                    </div>
+                                </div>
+                                <div class="wf-img wf-map" data-n="5"><span class="wf-btn primary">Show map</span></div>
+                            </div>
+                        </div>
+
+                        <!-- One garden, as a visitor -->
+                        <div class="wf-screen" data-wf-screen="garden" data-wf-section="gardens" data-wf-label="GARDEN NAME" hidden>
+                            <div class="wf-narrow">
+                                <button type="button" class="wf-link" data-wf-go="gardens">← All gardens</button>
+                                <div class="wf-facts" data-n="1"><span></span><span></span><span></span><span></span></div>
+                                <div class="wf-box">
+                                    <div data-n="2"><div class="wf-h w40"></div><div class="wf-line w60 thin"></div><div class="wf-line w90"></div><div class="wf-line w30 thin"></div></div>
+                                    <div data-n="3">
+                                        <div class="wf-label">Public notes</div>
+                                        <div class="wf-list-item"><div class="wf-row"><div class="wf-line w30 strong"></div><span class="wf-tag">Public</span></div><div class="wf-line w80"></div></div>
+                                        <div class="wf-list-item"><div class="wf-row"><div class="wf-line w20 strong"></div><span class="wf-tag">Public</span></div><div class="wf-line w60"></div></div>
+                                    </div>
+                                    <div class="wf-box wf-dashed" data-n="4">2 members-only notes are hidden. Ask to join to read them.</div>
+                                    <div data-n="5">
+                                        <div class="wf-label">Ask to join</div>
+                                        <div class="wf-input"></div><div class="wf-input wf-textarea"></div><div class="wf-input"></div>
+                                        <button type="button" class="wf-btn primary" data-wf-go="garden-member">Ask to join</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- One garden, as a member -->
+                        <div class="wf-screen" data-wf-screen="garden-member" data-wf-section="gardens" data-wf-label="GARDEN NAME" hidden>
+                            <div class="wf-box wf-dashed" data-n="1">Anna accepted your request! You're now a member.</div>
+                            <div class="wf-grid-2 wide-left">
+                                <div class="wf-box">
+                                    <div data-n="2">
+                                        <div class="wf-h w20"></div>
+                                        <div class="wf-input wf-textarea"></div>
+                                        <div class="wf-row"><span class="wf-radio"></span><div class="wf-line w20"></div><span class="wf-radio"></span><div class="wf-line w20"></div></div>
+                                        <div class="wf-row"><span class="wf-btn small">Choose file</span><span class="wf-btn primary">Post note</span></div>
+                                    </div>
+                                    <div data-n="3">
+                                        <div class="wf-list-item"><div class="wf-row"><div class="wf-line w30 strong"></div><span class="wf-tag">Members only</span></div><div class="wf-line w80"></div></div>
+                                        <div class="wf-list-item"><div class="wf-row"><div class="wf-line w20 strong"></div><span class="wf-tag">Public</span></div><div class="wf-line w60"></div><div class="wf-img wf-photo"></div></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="wf-box" data-n="4">
+                                        <div class="wf-h w40"></div>
+                                        <div class="wf-row"><span class="wf-avatar"></span><div class="wf-grow"><div class="wf-line w50 strong"></div><div class="wf-line w80"></div></div></div>
+                                        <div class="wf-row"><span class="wf-avatar"></span><div class="wf-grow"><div class="wf-line w40 strong"></div><div class="wf-line w70"></div></div></div>
+                                    </div>
+                                    <div class="wf-box" data-n="5">
+                                        <div class="wf-h w60"></div>
+                                        <div class="wf-input"></div>
+                                        <div class="wf-checks" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                                        <span class="wf-btn primary">Save profile</span>
+                                        <button type="button" class="wf-btn" data-wf-go="garden">Leave this group</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="wf-notes" data-wf-legend-for="wf-desktop" aria-live="polite">
+                    <p class="wf-notes-note"><strong>A</strong> The nav is on every page; the current page is marked (tan on the real site).</p>
+                    <div data-wf-legend="home">
+                        <h3>Home</h3>
+                        <ol class="wf-legend">
+                            <li>Intro: who the site is for and what it does.</li>
+                            <li>"Right now": the month, its Minecraft mini-game (September pumpkin, October carrot) and the live 7-day forecast with frost warnings.</li>
+                            <li>12 flip cards, one per month. Hovering flips a card (weather, frost risk, how much to sow, plant and harvest); clicking opens the month. This month is outlined.</li>
+                            <li>QR code that opens the mobile app on a phone.</li>
+                            <li>FAQ for first-time gardeners: the questions fold open one at a time.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="month" hidden>
+                        <h3>One month</h3>
+                        <ol class="wf-legend">
+                            <li>Previous and next month, like the previous/next album on the original design.</li>
+                            <li>The month's card.</li>
+                            <li>Jump buttons to the Sow, Plant and Harvest sections.</li>
+                            <li>Typical German weather: day, night, rain, daylight, frost risk.</li>
+                            <li>Jobs for the month.</li>
+                            <li>What to start indoors, sow outdoors, plant out and harvest, with "easy" tags for beginners.</li>
+                            <li>Your own notes from this month in earlier years.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="plants" hidden>
+                        <h3>All plants</h3>
+                        <ol class="wf-legend">
+                            <li>Intro and the key: I = start indoors, S = sow outdoors, P = plant out, H = harvest.</li>
+                            <li>The whole year as a table, one row per plant; this month's column is highlighted.</li>
+                            <li>A profile for each of the 31 plants. Clicking a plant's name jumps to it, framed by the animated dashed border (dashed here).</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="notes" hidden>
+                        <h3>My notes</h3>
+                        <ol class="wf-legend">
+                            <li>"All fields are required", said before typing (error prevention).</li>
+                            <li>The same look for every field; the note has a 1000-character counter.</li>
+                            <li>A plain-language message under each empty field.</li>
+                            <li>Save, then download the notes or load them from a file, to hand over to the next plot holder.</li>
+                            <li>The diary, newest first, each with a Delete button.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="gardens" hidden>
+                        <h3>Find a garden</h3>
+                        <ol class="wf-legend">
+                            <li>Prototype banner and "Reset prototype data".</li>
+                            <li>Your groups, shown only once you're in one.</li>
+                            <li>Search by name, neighbourhood or postcode; district and type filters; Near me.</li>
+                            <li>Results, 30 at a time. Click one to open the garden.</li>
+                            <li>The street map loads only after "Show map" (privacy).</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="garden" hidden>
+                        <h3>A garden, as a visitor</h3>
+                        <ol class="wf-legend">
+                            <li>Details: type, neighbourhood, district, website, map link.</li>
+                            <li>The group: "run by its members, not an official page", description, members.</li>
+                            <li>Public notes anyone can read.</li>
+                            <li>How many members-only notes are hidden.</li>
+                            <li>Ask to join: click it to see the member view (the pretend admin accepts).</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="garden-member" hidden>
+                        <h3>A garden, as a member</h3>
+                        <ol class="wf-legend">
+                            <li>The confirmation, next to where you are.</li>
+                            <li>New note: text, "Members only" or "Public", an optional photo (iPhone HEIC works).</li>
+                            <li>All notes, each marked Members only or Public.</li>
+                            <li>Members and what they grow.</li>
+                            <li>Your profile in the group; Leave this group takes you back to the visitor view.</li>
+                        </ol>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- ================= Mobile app ================= -->
+        <section class="wf-section" aria-labelledby="wf-mobile-title">
+            <h2 id="wf-mobile-title">Mobile app</h2>
+            <div class="wf-layout phone-layout">
+                <div class="wf wf-phone" id="wf-mobile" data-wf-frame aria-label="Wireframe of the mobile app">
+                    <div class="wf-phone-screens">
+
+                        <!-- Welcome -->
+                        <div class="wf-screen" data-wf-screen="welcome" data-wf-section="none">
+                            <div class="wf-welcome">
+                                <span class="wf-avatar big" data-n="1"></span>
+                                <div class="wf-h w60"></div>
+                                <div class="wf-line w90"></div><div class="wf-line w80"></div><div class="wf-line w50"></div>
+                                <div data-n="2"><div class="wf-label">What should we call you?</div><div class="wf-input"></div><div class="wf-label">Your district (optional)</div><div class="wf-input wf-select"></div></div>
+                                <button type="button" class="wf-btn primary" data-n="3" data-wf-go="m-home">Get started</button>
+                            </div>
+                        </div>
+
+                        <!-- Home -->
+                        <div class="wf-screen" data-wf-screen="m-home" data-wf-section="m-home" hidden>
+                            <div data-n="1"><div class="wf-h w60">Welcome, {name}</div><div class="wf-line w90"></div><div class="wf-line w70"></div><span class="wf-tag">It's October · Autumn</span></div>
+                            <div class="wf-box" data-n="2"><div class="wf-label">This week's weather</div><div class="wf-box wf-dashed small">Frost risk on Wed</div><div class="wf-days"><span></span><span></span><span class="frost"></span><span></span></div></div>
+                            <div class="wf-row two" data-n="3"><button type="button" class="wf-btn primary" data-wf-open="sheet-update">Update garden</button><button type="button" class="wf-btn" data-wf-open="sheet-update">Photo note</button></div>
+                            <div class="wf-box" data-n="4"><div class="wf-label">October jobs · 2 of 5 done</div><div class="wf-check-line"><span></span><div class="wf-line w70"></div></div><div class="wf-check-line"><span></span><div class="wf-line w60"></div></div><div class="wf-check-line"><span></span><div class="wf-line w80"></div></div></div>
+                            <div class="wf-box" data-n="5"><div class="wf-label">What's in season</div><div class="wf-chips"><span></span><span></span><span></span><span></span><span></span></div><div class="wf-strip"><span></span><span></span><span class="now"></span><span></span></div></div>
+                            <div class="wf-box" data-n="6"><div class="wf-label">Your garden community</div><div class="wf-line w40 strong"></div><div class="wf-line w80"></div></div>
+                            <div class="wf-box" data-n="7"><div class="wf-label">My notes</div><div class="wf-line w70"></div><div class="wf-line w50"></div><span class="wf-btn small">Add a note</span></div>
+                            <div class="wf-box" data-n="8"><div class="wf-label">October mini-game</div><div class="wf-img wf-game">carrot</div></div>
+                            <div class="wf-box" data-n="9"><div class="wf-label">Suggestion box</div><div class="wf-input wf-select"></div><div class="wf-input wf-textarea"></div><span class="wf-btn primary small">Send</span></div>
+                        </div>
+
+                        <!-- Explore -->
+                        <div class="wf-screen wf-explore" data-wf-screen="m-explore" data-wf-section="m-explore" hidden>
+                            <div class="wf-row" data-n="1"><div class="wf-input wf-grow">District, neighbourhood or postcode</div><span class="wf-avatar"></span></div>
+                            <div class="wf-chips" data-n="2"><span class="on"></span><span></span><span></span><span></span></div>
+                            <div class="wf-img wf-map tall" data-n="3"><span class="wf-btn primary small">Load map</span></div>
+                            <div class="wf-panel" data-n="4">
+                                <div class="wf-handle"></div>
+                                <div class="wf-line w40 thin"></div>
+                                <button type="button" class="wf-result" data-wf-open="sheet-garden"><span class="wf-line w60 strong"></span><span class="wf-line w40"></span></button>
+                                <button type="button" class="wf-result" data-wf-open="sheet-garden"><span class="wf-line w50 strong"></span><span class="wf-line w30"></span></button>
+                            </div>
+                        </div>
+
+                        <!-- Settings -->
+                        <div class="wf-screen" data-wf-screen="m-settings" data-wf-section="m-settings" hidden>
+                            <div class="wf-h w40">Settings</div>
+                            <div class="wf-box" data-n="1"><div class="wf-row"><span class="wf-avatar"></span><span class="wf-btn small">Choose file</span></div><div class="wf-input"></div><div class="wf-input wf-select"></div><span class="wf-btn primary small">Save profile</span></div>
+                            <div class="wf-box" data-n="2"><div class="wf-switch-line"><div class="wf-line w60"></div><span class="on"></span></div><div class="wf-switch-line"><div class="wf-line w70"></div><span></span></div><div class="wf-switch-line"><div class="wf-line w50"></div><span class="on"></span></div><div class="wf-row"><span class="wf-radio"></span><div class="wf-line w30"></div><span class="wf-radio"></span><div class="wf-line w20"></div></div></div>
+                            <div class="wf-box" data-n="3"><div class="wf-label">Questions</div><div class="wf-acc">▸ <div class="wf-line w70"></div></div><div class="wf-acc">▸ <div class="wf-line w60"></div></div></div>
+                            <div class="wf-box" data-n="4"><div class="wf-label">Install the app</div><div class="wf-line w80"></div></div>
+                            <div class="wf-box" data-n="5"><div class="wf-label">Your data</div><div class="wf-row"><span class="wf-btn small">Download my notes</span><span class="wf-btn small">Reset</span></div></div>
+                            <div class="wf-box" data-n="6"><button type="button" class="wf-btn wf-block" data-wf-go="welcome">Log out</button><span class="wf-btn wf-block danger">Delete profile</span></div>
+                        </div>
+                    </div>
+
+                    <nav class="wf-tabbar" data-n="B" aria-label="Wireframe tabs">
+                        <button type="button" data-wf-go="m-home"><span></span>Home</button>
+                        <button type="button" data-wf-go="m-explore"><span></span>Explore</button>
+                        <button type="button" data-wf-go="m-settings"><span></span>Settings</button>
+                    </nav>
+
+                    <!-- Bottom sheets -->
+                    <div class="wf-sheet" data-wf-sheet="sheet-update" hidden>
+                        <div class="wf-row"><div class="wf-h w50">Update garden</div><button type="button" class="wf-btn small" data-wf-close aria-label="Close">✕</button></div>
+                        <div data-n="1"><div class="wf-label">What did you do?</div><div class="wf-input"></div><div class="wf-input wf-select"></div><div class="wf-input"></div><div class="wf-input wf-textarea"></div></div>
+                        <div class="wf-row" data-n="2"><span class="wf-btn small">Camera</span><div class="wf-img wf-photo small"></div></div>
+                        <span class="wf-btn primary small">Save note</span>
+                        <div data-n="3"><div class="wf-label">What are you growing?</div><div class="wf-checks"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+                    </div>
+                    <div class="wf-sheet" data-wf-sheet="sheet-garden" hidden>
+                        <div class="wf-row"><div class="wf-h w60">Garden name</div><button type="button" class="wf-btn small" data-wf-close aria-label="Close">✕</button></div>
+                        <div class="wf-line w50 thin" data-n="1"></div>
+                        <div data-n="2"><div class="wf-list-item"><div class="wf-row"><div class="wf-line w30 strong"></div><span class="wf-tag">Public</span></div><div class="wf-line w80"></div></div></div>
+                        <div class="wf-box wf-dashed small" data-n="3">2 members-only notes are hidden</div>
+                        <div data-n="4"><div class="wf-label">Ask to join</div><div class="wf-input"></div><div class="wf-input wf-textarea"></div><span class="wf-btn primary small">Ask to join</span></div>
+                    </div>
+                </div>
+
+                <aside class="wf-notes" data-wf-legend-for="wf-mobile" aria-live="polite">
+                    <p class="wf-notes-note"><strong>B</strong> Three tabs, each with an icon and a label; the current one is marked (tan in the app).</p>
+                    <div data-wf-legend="welcome">
+                        <h3>Welcome</h3>
+                        <ol class="wf-legend">
+                            <li>Logo and the tagline.</li>
+                            <li>Just a name and an optional district: no email or password, since this is a prototype.</li>
+                            <li>Get started opens Home.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="m-home" hidden>
+                        <h3>Home</h3>
+                        <ol class="wf-legend">
+                            <li>"Welcome, {name}", the tagline and which month it is.</li>
+                            <li>The week's weather as day cards you swipe, with a frost warning.</li>
+                            <li>Update garden and Photo note: both open the Update sheet (Photo note opens the camera).</li>
+                            <li>This month's jobs to tick off.</li>
+                            <li>What's in season (tap a plant) and the 12 months, small.</li>
+                            <li>Updates from your garden groups.</li>
+                            <li>Your latest notes.</li>
+                            <li>The month's mini-game.</li>
+                            <li>Suggestion box.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="m-explore" hidden>
+                        <h3>Explore</h3>
+                        <ol class="wf-legend">
+                            <li>One search box for district, neighbourhood or postcode, and Near me.</li>
+                            <li>Filters: All, Community, Allotment, With a group.</li>
+                            <li>The street map, loaded after one tap (or always, if allowed in Settings).</li>
+                            <li>Results in a pull-up panel; tap one to open the garden's sheet.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="m-settings" hidden>
+                        <h3>Settings</h3>
+                        <ol class="wf-legend">
+                            <li>Profile: photo, name, district.</li>
+                            <li>Permissions: location, map, sounds, and the default for new group notes.</li>
+                            <li>The same FAQ as the desktop site.</li>
+                            <li>How to install the app (it works offline).</li>
+                            <li>Download notes, reset the prototype.</li>
+                            <li>Log out (keeps your data; try it) and Delete profile (the only red button).</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="sheet-update" hidden>
+                        <h3>Update garden (sheet)</h3>
+                        <ol class="wf-legend">
+                            <li>What did you do: date, what happened, plant, note. Saved to My notes.</li>
+                            <li>Optional photo straight from the camera; location data is removed.</li>
+                            <li>What you're growing, also shown on your group cards.</li>
+                        </ol>
+                    </div>
+                    <div data-wf-legend="sheet-garden" hidden>
+                        <h3>A garden (sheet)</h3>
+                        <ol class="wf-legend">
+                            <li>Type, neighbourhood and distance.</li>
+                            <li>Public notes.</li>
+                            <li>How many members-only notes are hidden.</li>
+                            <li>Ask to join; once accepted, the private notes appear here.</li>
+                        </ol>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </div>
+
+    <script src="prototype.js"></script>
+</body>
+</html>
