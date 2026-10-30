@@ -441,17 +441,18 @@ const FAQ = [
   },
 ];
 
-// Cities for the live forecast on the home page.
-const CITIES = [
-  { name: "Berlin",     lat: 52.52, lon: 13.41 },
-  { name: "Hamburg",    lat: 53.55, lon: 9.99 },
-  { name: "Munich",     lat: 48.14, lon: 11.58 },
-  { name: "Cologne",    lat: 50.94, lon: 6.96 },
-  { name: "Frankfurt",  lat: 50.11, lon: 8.68 },
-  { name: "Stuttgart",  lat: 48.78, lon: 9.18 },
-  { name: "Düsseldorf", lat: 51.23, lon: 6.78 },
-  { name: "Leipzig",    lat: 51.34, lon: 12.37 },
-  { name: "Dresden",    lat: 51.05, lon: 13.74 },
-  { name: "Hanover",    lat: 52.37, lon: 9.73 },
-  { name: "Potsdam",    lat: 52.39, lon: 13.06 },
+// Berlin's 12 districts for the live forecast: the centre of each (from OpenStreetMap).
+const WEATHER_DISTRICTS = [
+  { name: "Charlottenburg-Wilmersdorf", lat: 52.51, lon: 13.26 },
+  { name: "Friedrichshain-Kreuzberg", lat: 52.51, lon: 13.43 },
+  { name: "Lichtenberg", lat: 52.53, lon: 13.51 },
+  { name: "Marzahn-Hellersdorf", lat: 52.52, lon: 13.59 },
+  { name: "Mitte", lat: 52.53, lon: 13.37 },
+  { name: "Neukölln", lat: 52.45, lon: 13.46 },
+  { name: "Pankow", lat: 52.6, lon: 13.44 },
+  { name: "Reinickendorf", lat: 52.6, lon: 13.3 },
+  { name: "Spandau", lat: 52.52, lon: 13.2 },
+  { name: "Steglitz-Zehlendorf", lat: 52.43, lon: 13.23 },
+  { name: "Tempelhof-Schöneberg", lat: 52.44, lon: 13.37 },
+  { name: "Treptow-Köpenick", lat: 52.42, lon: 13.6 },
 ];

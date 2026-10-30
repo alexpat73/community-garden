@@ -2,10 +2,10 @@
 // e.g. on an allotment with weak reception. Registered with scope "./app", so the
 // desktop pages are not affected.
 
-const CACHE = "garden-app-v1"; // change the number to throw away old caches
+const CACHE = "garden-app-v2"; // change the number to throw away old caches
 const SHELL = [
   "app.html", "style.css", "mobile.css", "manifest.webmanifest",
-  "data.js", "gardens-data.js", "community-demo.js", "app.js", "community.js", "mobile.js",
+  "data.js", "plant-photos.js", "gardens-data.js", "community-demo.js", "app.js", "community.js", "mobile.js",
   "font/urbanist-latin.woff2", "vendor/fontawesome/icons.svg",
   "images/app-icon-192.png", "images/PvZ_1_Peashooter.svg",
 ];

@@ -18,9 +18,6 @@ const PHOTO_ACCEPT = "image/*,.heic,.heif";
 const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const plantName = (id) => PLANTS.find((p) => p.id === id)?.name ?? id;
 
-// "Kürbis Straße" and "kurbis strasse" should match each other.
-const simplify = (text) => String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss").toLowerCase();
-
 function isoDaysAgo(days) {
   const d = new Date(Date.now() - days * 86400000);
   const pad = (n) => String(n).padStart(2, "0");
@@ -35,6 +32,7 @@ function distanceKm(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
+const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#${name}"></use></svg>`;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const formatDistance = (km) => (km < 1 ? `${Math.round(km * 1000 / 10) * 10} m` : `${km < 10 ? km.toFixed(1) : Math.round(km)} km`);
 
@@ -121,13 +119,13 @@ function seedState() {
   return {
     me: { name: "" },
     groups: DEMO_GROUPS.map((g) => ({
-      id: g.id, gardenId: g.gardenId, name: g.name, description: g.description, owner: g.owner, example: true,
+      id: g.id, gardenId: g.gardenId, name: g.name, description: g.description, owner: g.owner, example: true, places: g.places,
       members: g.members.map((m) => ({ id: uid(), name: m.name, growing: m.growing, photo: null, isMe: false })),
       notes: g.notes.map((n) => ({ id: uid(), author: n.author, authorIsMe: false, date: isoDaysAgo(n.daysAgo),
         visibility: n.visibility, text: n.text, photo: null })),
       requests: [],
     })),
-    myStatus: {},     // group id -> "owner" | "member" | "pending"
+    myStatus: {},     // group id -> "owner" | "member" | "pending" | "waiting" (the group was full)
     myRequests: {},   // group id -> { growing, sentAt } while waiting for approval
   };
 }
@@ -135,7 +133,12 @@ function seedState() {
 function loadState() {
   try {
     const state = JSON.parse(storageGet(COMMUNITY_KEY));
-    if (state && Array.isArray(state.groups)) return state;
+    if (state && Array.isArray(state.groups)) {
+      for (const g of state.groups) { // groups saved before "places" existed
+        g.places ??= DEMO_GROUPS.find((d) => d.id === g.id)?.places ?? Math.max(10, g.members.length);
+      }
+      return state;
+    }
   } catch {
     // broken or missing: start fresh below
   }
@@ -149,6 +152,13 @@ const saveState = (state) => storageSet(COMMUNITY_KEY, JSON.stringify(state));
 
 const groupOfGarden = (state, gardenId) => state.groups.find((g) => g.gardenId === gardenId);
 
+// Places: how many people a group has room for.
+const freePlaces = (g) => Math.max(0, g.places - g.members.length);
+function placesLine(g) {
+  const free = freePlaces(g);
+  return free ? `${g.members.length} of ${g.places} places taken · ${plural(free, "place")} free` : `Full: all ${g.places} places are taken`;
+}
+
 // The pretend admin: accepts every request that has waited long enough. Returns the accepted groups.
 function processApprovals(state) {
   const accepted = [];
@@ -156,6 +166,12 @@ function processApprovals(state) {
     const group = state.groups.find((g) => g.id === groupId);
     if (!group || state.myStatus[groupId] !== "pending") { delete state.myRequests[groupId]; continue; }
     if (Date.now() - request.sentAt < APPROVAL_DELAY_MS) continue;
+    if (!freePlaces(group)) { // filled up in the meantime: onto the waiting list
+      state.myStatus[groupId] = "waiting";
+      delete state.myRequests[groupId];
+      saveState(state);
+      continue;
+    }
     group.members.push({ id: uid(), name: state.me.name, growing: plantsMentioned(request.growing), photo: null, isMe: true });
     state.myStatus[groupId] = "member";
     delete state.myRequests[groupId];
@@ -164,6 +180,27 @@ function processApprovals(state) {
   if (accepted.length) saveState(state);
   return accepted;
 }
+// Shared by the desktop group page and the app: start a group (you're the owner; the example
+// join requests arrive straight away) and answer a join request.
+function startGroup(state, garden, { description, places }) {
+  const group = {
+    id: uid(), gardenId: garden.id, name: garden.name, description, owner: state.me.name, example: false, places,
+    members: [{ id: uid(), name: state.me.name, growing: [], photo: null, isMe: true }],
+    notes: [],
+    requests: DEMO_REQUESTS.map((r) => ({ ...r, id: uid(), date: todayISO() })),
+  };
+  state.groups.push(group);
+  state.myStatus[group.id] = "owner";
+  return group;
+}
+
+function answerRequest(group, requestId, accept) {
+  const request = group.requests.find((r) => r.id === requestId);
+  group.requests = group.requests.filter((r) => r.id !== requestId);
+  if (accept) group.members.push({ id: uid(), name: request.name, growing: plantsMentioned(request.growing), photo: null, isMe: false });
+  return accept ? `${request.name} is now a member and can read the members-only notes.` : `You declined ${request.name}'s request.`;
+}
+
 const acceptedMessage = (groups) => groups.map((g) => `${g.owner} accepted your request! You're now a member of ${g.name}.`).join(" ");
 
 function resetPrototype() {
@@ -236,7 +273,7 @@ function photoField(input, preview, status, submitButton) {
     try {
       photo = await preparePhoto(file, (message) => showStatus(status, message));
       preview.innerHTML = `<img src="${photo}" alt="Preview of your photo">`;
-      showStatus(status, "Photo ready.");
+      showStatus(status, "Photo ready.", "success");
     } catch (error) {
       photo = null;
       preview.innerHTML = "";
@@ -286,11 +323,11 @@ function renderGardens() {
   const state = loadState();
   const pageStatus = $("#community-status");
   const accepted = processApprovals(state);
-  if (accepted.length) showStatus(pageStatus, acceptedMessage(accepted));
+  if (accepted.length) { showStatus(pageStatus, acceptedMessage(accepted), "success"); toast("Request accepted"); }
 
   // Your groups
   const mine = state.groups.filter((g) => state.myStatus[g.id]);
-  const statusLabel = { owner: "Owner", member: "Member", pending: "Request pending" };
+  const statusLabel = { owner: "Owner", member: "Member", pending: "Request pending", waiting: "On the waiting list" };
   // Only shown once you're in a group, so the search stays at the top of the page.
   $("#my-groups-box").hidden = !mine.length;
   $("#my-groups").innerHTML = `<ul class="my-groups">${mine.map((g) => `<li><a href="${gardenUrl(g.gardenId)}">${esc(g.name)}</a>
@@ -433,7 +470,7 @@ function renderGardenPage() {
   let state = loadState();
   const pageStatus = $("#community-status");
   const accepted = processApprovals(state);
-  if (accepted.length) showStatus(pageStatus, acceptedMessage(accepted));
+  if (accepted.length) { showStatus(pageStatus, acceptedMessage(accepted), "success"); toast("Request accepted"); }
 
   // Saves and redraws, or undoes the change if the browser is out of space. The message appears
   // next to what you just did (target), scrolled into view if needed, rather than at the top of the page.
@@ -445,12 +482,15 @@ function renderGardenPage() {
       return;
     }
     draw();
-    if (message) flash(message, target, false, scroll);
+    if (message) {
+      flash(message, target, false, scroll);
+      toast(message.split(/[.!]/)[0]); // the first sentence, e.g. "Note posted"
+    }
   }
 
   function flash(message, target, isError = false, scroll = true) {
     const el = $(target) || $("#group-flash") || pageStatus;
-    showStatus(el, message, isError);
+    showStatus(el, message, isError ? "error" : "success");
     if (scroll) el.scrollIntoView({ block: "nearest" });
   }
 
@@ -487,6 +527,8 @@ function renderGardenPage() {
           ${field("start-about", "About the group", `<textarea id="start-about" rows="3" maxlength="300" required
             placeholder="Who you are, when you meet, who's welcome…" data-error="Write a sentence about the group." aria-describedby="start-about-count start-about-error"></textarea>`,
             '<p class="char-count" id="start-about-count">0 / 300 characters</p>')}
+          ${field("start-places", "How many places? (people or plots)", `<input type="number" id="start-places" min="1" max="500" required value="10"
+            inputmode="numeric" data-error="Write how many people the group has room for." aria-describedby="start-places-error">`)}
           <button type="submit">Start the group</button>
           <p class="form-status" id="start-status" role="status"></p>
         </form>
@@ -498,22 +540,17 @@ function renderGardenPage() {
       event.preventDefault();
       const empty = check();
       if (empty) return showStatus($("#start-status"), emptyFieldsMessage(empty), true);
+      const places = Number($("#start-places").value);
+      if (!(places >= 1 && places <= 500)) return showStatus($("#start-status"), "Places must be a number from 1 to 500.", true);
       state.me.name = $("#start-name").value.trim();
-      const group = {
-        id: uid(), gardenId: garden.id, name: garden.name, description: $("#start-about").value.trim(),
-        owner: state.me.name, example: false,
-        members: [{ id: uid(), name: state.me.name, growing: [], photo: null, isMe: true }],
-        notes: [],
-        requests: DEMO_REQUESTS.map((r) => ({ ...r, id: uid(), date: todayISO() })),
-      };
-      state.groups.push(group);
-      state.myStatus[group.id] = "owner";
+      const group = startGroup(state, garden, { description: $("#start-about").value.trim(), places });
       commit(`Your group is ready. ${group.requests.length} people have already asked to join (example requests).`);
     });
   }
 
   // ----- Not a member (or waiting): public notes and the join form -----
   function drawVisitorView(details, group, status) {
+    const full = !freePlaces(group);
     const publicNotes = group.notes.filter((n) => n.visibility === "public");
     const hidden = group.notes.length - publicNotes.length;
     main.innerHTML = `${details}
@@ -523,15 +560,19 @@ function renderGardenPage() {
         <p class="small">Community group run by its members, not an official page of this garden.</p>
         <p>${esc(group.description)}</p>
         <p class="group-meta">${plural(group.members.length, "member")} · started by ${esc(group.owner)}</p>
+        <p class="places${freePlaces(group) ? "" : " full"}">${icon("users")} ${placesLine(group)}</p>
         <h3>Public notes</h3>
         ${publicNotes.length ? `<ul class="note-feed">${publicNotes.map((n) => noteCard(n, false)).join("")}</ul>`
           : '<p class="empty">No public notes yet.</p>'}
         ${hidden ? `<p class="hidden-notes">${plural(hidden, "members-only note")} ${hidden === 1 ? "is" : "are"} hidden. Ask to join to read ${hidden === 1 ? "it" : "them"}.</p>` : ""}
         ${status === "pending"
           ? `<p class="request-status" role="status">Request sent to ${esc(group.owner)}, waiting for approval… (In this prototype, a pretend admin answers in a few seconds.)</p>`
-          : `<h3>Ask to join</h3>
+          : status === "waiting"
+          ? `<p class="request-status" role="status">You're on the waiting list for ${esc(group.name)}. ${esc(group.owner)} will let you know when a place is free.</p>
+            <button type="button" class="button-secondary" id="leave-waiting">Leave the waiting list</button>`
+          : `<h3>${full ? "Join the waiting list" : "Ask to join"}</h3>
             <form id="join-form" class="note-form" novalidate>
-              <p class="form-hint">All fields are required. ${esc(group.owner)} will see your request.</p>
+              <p class="form-hint">${full ? `This group is full right now. Join the waiting list and ${esc(group.owner)} will let you know when a place is free. ` : ""}All fields are required. ${esc(group.owner)} will see your request.</p>
               ${field("join-name", "Your name", `<input type="text" id="join-name" maxlength="40" required placeholder="A first name or nickname is fine"
                 value="${esc(state.me.name)}" data-error="Write the name the group will see." aria-describedby="join-name-error">`)}
               ${field("join-message", "Message to the group", `<textarea id="join-message" rows="3" maxlength="500" required
@@ -539,11 +580,18 @@ function renderGardenPage() {
                 '<p class="char-count" id="join-message-count">0 / 500 characters</p>')}
               ${field("join-growing", "What would you like to grow?", `<input type="text" id="join-growing" maxlength="100" required
                 placeholder="e.g. Tomatoes and basil" data-error="Write what you'd like to grow, or 'not sure yet'." aria-describedby="join-growing-error">`)}
-              <button type="submit">Ask to join</button>
+              <button type="submit">${full ? "Join the waiting list" : "Ask to join"}</button>
               <p class="form-status" id="join-status" role="status"></p>
             </form>`}
       </section>`;
     if (status === "pending") return scheduleApprovalCheck(group);
+    if (status === "waiting") {
+      $("#leave-waiting").addEventListener("click", () => {
+        delete state.myStatus[group.id];
+        commit("You left the waiting list.");
+      });
+      return;
+    }
 
     const form = $("#join-form");
     const check = requiredFieldsChecker(form);
@@ -553,9 +601,14 @@ function renderGardenPage() {
       const empty = check();
       if (empty) return showStatus($("#join-status"), emptyFieldsMessage(empty), true);
       state.me.name = $("#join-name").value.trim();
+      if (full) {
+        state.myStatus[group.id] = "waiting";
+        return commit(`You're on the waiting list for ${group.name}.`);
+      }
       state.myStatus[group.id] = "pending";
       state.myRequests[group.id] = { growing: $("#join-growing").value.trim(), sentAt: Date.now() };
       commit(null); // the "waiting for approval" line replaces the form
+      toast("Request sent");
     });
   }
 
@@ -565,7 +618,7 @@ function renderGardenPage() {
       state = loadState();
       const accepted = processApprovals(state);
       draw();
-      if (accepted.length) flash(acceptedMessage(accepted), "#group-flash");
+      if (accepted.length) { flash(acceptedMessage(accepted), "#group-flash"); toast("Request accepted"); }
     }, Math.max(0, APPROVAL_DELAY_MS - waited) + 50);
   }
 
@@ -581,13 +634,14 @@ function renderGardenPage() {
       ${isOwner && group.requests.length ? `
         <section class="group-box requests">
           <h2>Join requests (${group.requests.length})</h2>
+          ${freePlaces(group) ? "" : '<p class="small">The group is full. Add places under "Group details" to accept more people.</p>'}
           <p class="form-status" id="requests-status" role="status"></p>
           <ul class="request-list">${group.requests.map((r) => `
             <li class="request-card">
               <p><strong>${esc(r.name)}</strong> · ${esc(formatDate(r.date))} <span class="tag">Example request</span></p>
               <p class="note-body">${esc(r.message)}</p>
               <p class="small">Would like to grow: ${esc(r.growing)}</p>
-              <button type="button" data-approve="${esc(r.id)}">Approve</button>
+              <button type="button" data-approve="${esc(r.id)}"${freePlaces(group) ? "" : " disabled"}>Approve</button>
               <button type="button" class="button-secondary" data-decline="${esc(r.id)}">Decline</button>
             </li>`).join("")}</ul>
         </section>` : ""}
@@ -597,6 +651,20 @@ function renderGardenPage() {
         <p class="small">Community group run by its members, not an official page of this garden.</p>
         <p>${esc(group.description)}</p>
         <p class="group-meta">${plural(group.members.length, "member")} · started by ${esc(group.owner)} · you're ${isOwner ? "the owner" : "a member"}</p>
+        <p class="places${freePlaces(group) ? "" : " full"}">${icon("users")} ${placesLine(group)}</p>
+        ${isOwner && !group.example ? `
+          <details class="group-edit">
+            <summary>Group details: description and places</summary>
+            <form id="group-edit" class="note-form" novalidate>
+              ${field("edit-about", "Description", `<textarea id="edit-about" rows="3" maxlength="300" required
+                data-error="Write a sentence about the group." aria-describedby="edit-about-count edit-about-error">${esc(group.description)}</textarea>`,
+                '<p class="char-count" id="edit-about-count"></p>')}
+              ${field("edit-places", "Places (people or plots)", `<input type="number" id="edit-places" min="${group.members.length}" max="500" required
+                value="${group.places}" inputmode="numeric" data-error="Write how many people the group has room for." aria-describedby="edit-places-error">`)}
+              <button type="submit">Save group details</button>
+              <p class="form-status" id="edit-status" role="status"></p>
+            </form>
+          </details>` : ""}
       </section>
       <div class="group-columns">
         <section class="group-box">
@@ -663,6 +731,25 @@ function renderGardenPage() {
         </aside>
       </div>`;
 
+    // Group details (owner)
+    const edit = $("#group-edit");
+    if (edit) {
+      const checkEdit = requiredFieldsChecker(edit);
+      charCounter($("#edit-about"), $("#edit-about-count"))();
+      edit.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const empty = checkEdit();
+        if (empty) return showStatus($("#edit-status"), emptyFieldsMessage(empty), true);
+        const places = Number($("#edit-places").value);
+        if (!(places >= group.members.length && places <= 500)) {
+          return showStatus($("#edit-status"), `Places must be at least ${group.members.length} (your members) and at most 500.`, true);
+        }
+        group.description = $("#edit-about").value.trim();
+        group.places = places;
+        commit("Group details saved.");
+      });
+    }
+
     // New note
     const post = $("#note-post");
     const checkPost = requiredFieldsChecker(post);
@@ -684,6 +771,7 @@ function renderGardenPage() {
       group.notes.push({ id: uid(), author: me?.name ?? state.me.name, authorIsMe: true, date: todayISO(),
         visibility, text: text.value.trim(), photo: postPhoto.get() });
       commit(visibility === "public" ? "Note posted. Everyone can read it." : "Note posted. Only members can read it.", "#post-status");
+      document.querySelector(`[data-delete-note="${group.notes[group.notes.length - 1].id}"]`)?.closest("li").classList.add("is-new");
     });
 
     // Delete a note (your own, or any note if it's your group)
@@ -695,15 +783,7 @@ function renderGardenPage() {
 
     // Join requests (owner)
     main.querySelectorAll("[data-approve], [data-decline]").forEach((button) => button.addEventListener("click", () => {
-      const id = button.dataset.approve || button.dataset.decline;
-      const request = group.requests.find((r) => r.id === id);
-      group.requests = group.requests.filter((r) => r.id !== id);
-      if (button.dataset.approve) {
-        group.members.push({ id: uid(), name: request.name, growing: plantsMentioned(request.growing), photo: null, isMe: false });
-        commit(`${request.name} is now a member and can read the members-only notes.`, "#requests-status");
-      } else {
-        commit(`You declined ${request.name}'s request.`, "#requests-status");
-      }
+      commit(answerRequest(group, button.dataset.approve || button.dataset.decline, Boolean(button.dataset.approve)), "#requests-status");
     }));
 
     // My profile

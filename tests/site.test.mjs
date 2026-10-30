@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 // A tiny web server for the project folder, so the pages load like they do online.
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png",
-  ".svg": "image/svg+xml", ".mp3": "audio/mpeg", ".woff2": "font/woff2", ".json": "application/json",
+  ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".mp3": "audio/mpeg", ".woff2": "font/woff2", ".json": "application/json",
   ".webmanifest": "application/manifest+json" };
 let server = null;
 let BASE = process.env.BASE;
@@ -73,6 +73,9 @@ for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "n
   check(await page.locator("#harvest-spot .mc-carrot").count() === (month === 10 ? 1 : 0), "home: carrot shown only in October");
   check(await page.locator("#harvest-spot .mc-stage:not(.mc-carrot)").count() === (month === 9 ? 1 : 0), "home: pumpkin shown only in September");
   check(await page.locator("#faq details").count() === 10, "home: 10 FAQ questions");
+  const districts = await page.locator("#city option").allTextContents();
+  check(districts.length === 12 && districts.includes("Neukölln") && !districts.includes("Hamburg"), "weather: Berlin's 12 districts, no other cities");
+  check(await page.$eval("#city", (s) => s.selectedOptions[0].textContent) === "Mitte", "weather: Mitte is the default");
   check(await page.locator('.app-promo img[src="images/qr-app.svg"]').count() === 1 && await page.locator('.app-promo a[href="app.html"]').count() === 1, "home: QR code and link to the mobile app");
   await page.close();
 }
@@ -174,7 +177,70 @@ for (const p of ["index.html", "month.html", "month.html?m=9", "plants.html", "n
   check((await page.locator("#note-text-count").textContent()) === "34 / 1000 characters", "notes: counter updates");
   await page.click("#note-form button[type=submit]");
   check((await page.locator("#notes-status").textContent()) === "Note saved." && await page.locator("#notes-list li .delete").count() === 1, "notes: complete form saves");
+  check(await page.locator("#notes-status.is-success").count() === 1 && (await page.textContent("#toast.show")) === "✓ Note saved", "notes: saving shows a green check line and a pop-up");
+  check(await page.locator("#notes-list li.is-new").count() === 1, "notes: the new note is highlighted");
   await page.close();
+}
+
+// ---------- All plants: a searchable list with photos ----------
+{
+  const { page, errors } = await open("plants.html");
+  const monthName = new Date().toLocaleDateString("en-GB", { month: "long" });
+  const cards = page.locator("#plant-list .plant");
+  const shown = () => page.locator("#plant-list .plant:not([hidden]) h3").allTextContents();
+  check(await cards.count() === 31 && (await page.textContent("#plant-count")) === "All 31 plants", "plants: 31 plant cards");
+  const photos = await page.$$eval("#plant-list .stage-photos img", (imgs) => imgs.map((i) => ({ src: i.getAttribute("src"), lazy: i.loading === "lazy", sized: i.width > 0 && i.getAttribute("height") === "180", alt: i.alt })));
+  check(photos.length === 93 && photos.every((p) => p.lazy && p.sized && p.alt), "plants: 3 photos per plant (seedling, growing, ready), lazy, sized, with alt text");
+  const files = await Promise.all(photos.map((p) => page.request.get(BASE + p.src)));
+  check(files.every((r) => r.ok()) && files.every((r) => r.headers()["content-type"] === "image/jpeg"), "plants: every photo file exists");
+  check((await page.locator("#plant-when option").allTextContents()).includes(`Something to do in ${monthName}`), "plants: the 'When' filter names this month");
+  await page.fill("#plant-search", "kurbis");
+  check((await shown()).join() === "Pumpkin (Kürbis)" && (await page.textContent("#plant-count")) === "1 of 31 plants", "plants search: kurbis finds Pumpkin (Kürbis)");
+  await page.fill("#plant-search", "kohl");
+  check((await shown()).join() === "Kohlrabi (Kohlrabi),Kale (Grünkohl),Brussels sprouts (Rosenkohl)", "plants search: German names too (kohl)");
+  await page.fill("#plant-search", "");
+  await page.selectOption("#plant-type", "Herbs");
+  check((await shown()).length === 4, "plants filter: 4 herbs");
+  await page.selectOption("#plant-type", "");
+  await page.selectOption("#plant-when", "harvest");
+  await page.check("#plant-easy");
+  const easyHarvest = await page.locator("#plant-list .plant:not([hidden])").evaluateAll((list) => list.map((el) => [el.querySelector(".plant-now")?.textContent, el.querySelector(".plant-tags").textContent]));
+  check(easyHarvest.length > 0 && easyHarvest.every(([now, tags]) => now.startsWith(`In ${monthName}:`) && now.includes("harvest") && tags.includes("Easy")), `plants filter: easy plants to harvest this month (${easyHarvest.length})`);
+  await page.fill("#plant-search", "zzz");
+  check(await page.isVisible("#plant-empty") && (await shown()).length === 0, "plants: no match says so, with a way back");
+  await page.click("#plant-reset");
+  check((await shown()).length === 31 && (await page.inputValue("#plant-search")) === "" && !(await page.isChecked("#plant-easy")), "plants: Show all plants clears the filters");
+  check(await page.locator("details.year-table:not([open]) #calendar tbody tr:not(.group)").count() === 31, "plants: the year table is still there, folded away");
+  check(await page.locator(".plant-more:not([open]) .facts").count() === 31, "plants: details fold out per plant");
+  check(await page.locator("#photo-credits li").count() === 31 && await page.locator('#photo-credits a[href^="https://commons.wikimedia.org/wiki/File:"]').count() === 93, "plants: every photo is credited, with a link");
+  check(errors.length === 0, `plants: no errors ${errors.join(" | ")}`);
+  await page.close();
+  const linked = (await open("plants.html#kale")).page; // e.g. from a month page
+  await linked.waitForTimeout(300);
+  check(await linked.$eval("#kale", (el) => Math.abs(el.getBoundingClientRect().top) < 5), "plants: a link to #kale jumps to Kale");
+  await linked.close();
+}
+
+// ---------- Jobs: your own jobs next to the month's, shared with the app ----------
+{
+  const month = new Date().getMonth() + 1;
+  const { page, ctx } = await open(`month.html?m=${month}`);
+  const box = page.locator("#jobs-box");
+  const builtIn = await box.locator(".checklist li").count();
+  await box.locator(".add-job button").click();
+  check((await box.locator(".field-error").textContent()) === "Write the job first.", "jobs: an empty job is blocked");
+  await box.locator(".add-job input").fill("Fix the shed door");
+  await box.locator(".add-job button").click();
+  check(await box.locator(".custom-job.is-new", { hasText: "Fix the shed door" }).count() === 1 && (await box.locator(".form-status.is-success").textContent()) === "Job added.", "jobs: your own job is added, with a green confirmation");
+  await box.locator(".custom-job input").check();
+  check((await box.locator(".jobs-progress").textContent()) === `1 of ${builtIn + 1} done`, "jobs: your own job counts");
+  await page.goto(BASE + "app.html");
+  await page.fill("#welcome-name", "Alex");
+  await page.click("#welcome-form button[type=submit]");
+  check(await page.locator("#jobs-box .custom-job input:checked").count() === 1 && (await page.textContent("#jobs-box")).includes("Fix the shed door"), "jobs: the same list in the app");
+  await page.click("#jobs-box [data-remove]");
+  check(await page.locator("#jobs-box .custom-job").count() === 0 && (await page.textContent("#jobs-box .form-status")) === "Job removed.", "jobs: your own job can be removed");
+  await ctx.close();
 }
 
 // ---------- Gardens: search, filters, near me, map only on request ----------
@@ -338,6 +404,25 @@ const photoInfo = (page, selector) => page.$eval(selector, (img) => new Promise(
   await ctx.close();
 }
 
+// ---------- Places: a full group has a waiting list ----------
+{
+  const { page, ctx } = await open("garden.html?id=demo-spree", { before: (page) => page.on("dialog", (d) => d.accept()) });
+  check((await page.textContent(".places")) .trim() === "Full: all 2 places are taken" && await page.locator(".places.full").count() === 1, "places: a full group says so");
+  check((await page.textContent("#join-form button[type=submit]")) === "Join the waiting list", "places: a full group offers the waiting list");
+  await page.fill("#join-name", "Alex");
+  await page.fill("#join-message", "Happy to wait for a place.");
+  await page.fill("#join-growing", "Beans");
+  await page.click("#join-form button[type=submit]");
+  check((await page.textContent(".request-status")).startsWith("You're on the waiting list") && await page.locator("#group-flash.is-success").count() === 1, "places: you're on the waiting list");
+  await page.reload();
+  check(await page.locator("#leave-waiting").count() === 1, "places: the waiting list is remembered");
+  await page.click("#leave-waiting");
+  check(await page.locator("#join-form").count() === 1 && (await page.textContent("#group-flash")) === "You left the waiting list.", "places: you can leave the waiting list");
+  await page.goto(BASE + "garden.html?id=demo-wedding");
+  check(/^\d+ of 12 places taken · \d+ places? free$/.test((await page.textContent(".places")).trim()), "places: other groups show the free places");
+  await ctx.close();
+}
+
 // ---------- Your own group: start it, answer requests, delete it ----------
 {
   const { page, ctx } = await open("garden.html?id=w332251381", { before: (page) => page.on("dialog", (d) => d.accept()) });
@@ -345,12 +430,24 @@ const photoInfo = (page, selector) => page.$eval(selector, (img) => new Promise(
   check((await page.textContent("#start-status")) === "2 fields are still empty.", "start a group: empty fields are blocked");
   await page.fill("#start-name", "Alex");
   await page.fill("#start-about", "Beds 40 to 44 on Tempelhofer Feld. We meet Sundays at 11.");
+  await page.fill("#start-places", "2");
   await page.click("#start-form button[type=submit]");
   check((await page.textContent("#group-flash")).startsWith("Your group is ready"), "start a group: confirmation");
   check(await page.locator(".request-card").count() === 2, "owner: 2 example join requests arrive");
   await page.locator(".request-card", { hasText: "Yusuf" }).locator("[data-approve]").click();
   check((await page.textContent("#requests-status")).startsWith("Yusuf is now a member"), "owner: approving says so next to the requests");
   check(await page.locator(".member-card", { hasText: "Yusuf" }).count() === 1, "owner: Yusuf joins the members");
+  check((await page.textContent(".places")).trim() === "Full: all 2 places are taken" && await page.locator(".request-card", { hasText: "Clara" }).locator("[data-approve]").isDisabled(), "owner: when the group is full, Approve is off");
+  await page.click(".group-edit summary");
+  await page.fill("#edit-places", "1");
+  await page.click("#group-edit button[type=submit]");
+  check((await page.textContent("#edit-status")).startsWith("Places must be at least 2"), "owner: places can't go below the members");
+  await page.fill("#edit-places", "3");
+  await page.fill("#edit-about", "Beds 40 to 44. New: we also meet Wednesdays at 18.");
+  await page.click("#group-edit button[type=submit]");
+  check((await page.textContent("#group-flash")) === "Group details saved." && await page.locator("#group-flash.is-success").count() === 1 && (await page.textContent("#toast.show")) === "✓ Group details saved", "owner: saving the group details is confirmed");
+  check((await page.textContent("#garden-main")).includes("New: we also meet Wednesdays") && (await page.textContent(".places")).trim() === "2 of 3 places taken · 1 place free", "owner: new description and places are shown");
+  check(await page.locator(".request-card", { hasText: "Clara" }).locator("[data-approve]").isEnabled(), "owner: with a free place, Approve is back");
   await page.locator(".request-card", { hasText: "Clara" }).locator("[data-decline]").click();
   check(await page.locator(".request-card").count() === 0 && await page.locator(".member-card").count() === 2, "owner: declining removes the request");
   await page.check('.plant-picker input[value="carrot"]');
@@ -380,6 +477,8 @@ const fakeNetwork = async (ctx) => {
   await ctx.route("https://api.open-meteo.com/**", (route) => route.fulfill({ json: WEATHER }));
   await ctx.route("https://tile.openstreetmap.org/**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: TINY_PNG }));
 };
+// The sheet slides up from below; measure it once it's in place.
+const sheetInPlace = (page) => page.waitForFunction(() => document.querySelector("#sheet").getAnimations().length === 0);
 // Tabs switch on the "hashchange" event, a moment after the tap.
 const goTab = async (page, tab) => {
   await page.click(`.tabbar a[data-tab="${tab}"]`);
@@ -410,17 +509,24 @@ const distances = async (page, selector) => (await page.locator(selector).allTex
   check((await page.textContent("#greeting")) === "Welcome, Alex", "app: Welcome, Alex");
   check((await page.locator(".tabbar a").allTextContents()).join() === "Home,Explore,Settings", "app: three tabs, each with a label");
   check(await page.getAttribute('.tabbar a[data-tab="home"]', "aria-current") === "page", "app: Home is the current tab");
+  check(await page.$eval("#city", (s) => s.selectedOptions[0].textContent) === "Neukölln" && await page.locator("#city option").count() === 12, "app weather: your district (Neukölln) of Berlin's 12");
+  check(await page.isVisible("#fab-note"), "app: a New note button floats on Home");
+  await page.click("#fab-note");
+  check((await page.textContent("#sheet-title")) === "Update garden", "app: New note opens Update garden");
+  await sheetInPlace(page);
+  check(await page.evaluate(() => Math.abs(document.querySelector("#sheet").getBoundingClientRect().bottom - document.querySelector(".phone").getBoundingClientRect().bottom) < 2), "sheet: sits at the bottom of the screen");
+  await page.click("#sheet-close");
 
   // Home
   check((await page.textContent("#tab-home .tagline")).startsWith("New to your allotment and the last gardener left no notes?"), "home: the tagline under the greeting");
   check((await page.textContent("#month-chip")).startsWith(`It's ${new Date().toLocaleDateString("en-GB", { month: "long" })}`), "home: says which month it is");
   await page.waitForFunction(() => document.querySelectorAll("#forecast tr").length === 8);
   check((await page.textContent("#forecast-summary")).startsWith("Frost risk") && await page.locator("#forecast-summary.has-frost").count() === 1, "home: the week's weather, with a frost warning");
-  const jobs = page.locator("#jobs-list input");
+  const jobs = page.locator("#jobs-box .checklist input");
   const jobCount = await jobs.count();
   await jobs.nth(0).check();
   await jobs.nth(1).check();
-  check((await page.textContent("#jobs-progress")) === `2 of ${jobCount} done`, "home: the jobs checklist counts what's done");
+  check((await page.textContent("#jobs-box .jobs-progress")) === `2 of ${jobCount} done`, "home: the jobs checklist counts what's done");
   await page.locator("#season .chip").first().click();
   check(await page.isVisible("#sheet") && await page.locator("#sheet .facts").count() === 1, "home: an in-season plant opens its details");
   await page.keyboard.press("Escape");
@@ -446,13 +552,14 @@ const distances = async (page, selector) => (await page.locator(selector).allTex
   await page.setInputFiles("#update-photo", join(FIXTURES, "iphone.heic"));
   await page.waitForFunction(() => document.querySelector("#update-photo-status").textContent === "Photo ready.", null, { timeout: 20000 });
   await page.click("#update-submit");
-  check((await page.textContent("#update-status")) === "Saved to My notes.", "update garden: the note is saved");
+  check((await page.textContent("#update-status")) === "Saved to My notes." && await page.locator("#update-status.is-success").count() === 1 && (await page.textContent("#toast.show")) === "✓ Note saved", "update garden: the note is saved, with a green check and a pop-up");
   await page.check('#update-growing input[value="kale"]');
   await page.check('#update-growing input[value="garlic"]');
   await page.click("#update-growing button[type=submit]");
   check((await page.textContent("#growing-status")).startsWith("Saved"), "update garden: what I grow is saved");
   await page.click("#sheet-close");
   check((await page.textContent("#app-notes")).includes("First kale of the year") && await page.locator("#app-notes .note-photo").count() === 1, "home: the new note shows in My notes, with its photo");
+  check(await page.locator("#app-notes li.is-new").count() === 1, "home: the new note is highlighted");
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.click("#photo-note")]);
   check(Boolean(chooser) && await page.isVisible("#update-photo"), "Photo note opens the camera straight away");
   await page.click("#sheet-close");
@@ -464,10 +571,19 @@ const distances = async (page, selector) => (await page.locator(selector).allTex
   await page.click("#suggest-form button[type=submit]");
   check((await page.textContent("#suggest-status")).startsWith("Thanks!") &&
     (await page.evaluate(() => JSON.parse(localStorage.getItem("garden-suggestions")).length)) === 1, "suggestion box: sent and saved");
+  check(await page.locator("#suggest-status.is-success").count() === 1 && (await page.textContent("#toast.show")) === "✓ Suggestion sent", "suggestion box: a green check and a pop-up say it was sent");
+
+  // All plants: search, then a plant with its photos
+  await page.click("#all-plants");
+  await page.fill("#app-plant-search", "kohl");
+  check((await page.locator("#sheet [data-plant]:not([hidden])").allTextContents()).join() === "Kohlrabi,Kale,Brussels sprouts", "app plants: search by English or German name");
+  await page.click('#sheet [data-plant="kale"]');
+  check((await page.textContent("#sheet-title")) === "Kale" && await page.locator("#sheet .stage-photos img").count() === 3 && await page.locator("#sheet .plant-more[open]").count() === 1, "app plants: a plant shows its 3 photos and details");
+  await page.click("#sheet-close");
 
   await page.reload();
   check((await page.textContent("#greeting")) === "Welcome back, Alex", "app: Welcome back, Alex after a reload");
-  check((await page.textContent("#jobs-progress")).startsWith("2 of"), "home: ticked jobs are kept");
+  check((await page.textContent("#jobs-box .jobs-progress")).startsWith("2 of"), "home: ticked jobs are kept");
 
   // Explore
   await goTab(page, "explore");
@@ -491,6 +607,7 @@ const distances = async (page, selector) => (await page.locator(selector).allTex
   await page.waitForTimeout(400);
   await page.click('#explore-results [data-garden="demo-wedding"]');
   check((await page.textContent("#sheet-title")) === "Sonnenbeet Wedding (example)", "explore: a garden opens in a sheet");
+  await sheetInPlace(page);
   check(await page.evaluate(() => {
     const sheet = document.querySelector("#sheet");
     const box = sheet.getBoundingClientRect();
@@ -505,6 +622,49 @@ const distances = async (page, selector) => (await page.locator(selector).allTex
   await page.waitForSelector("#sheet .flash");
   check((await page.textContent("#sheet .flash")).includes("Anna accepted") &&
     await page.locator("#sheet .note-card .tag", { hasText: "Members only" }).count() === 2, "join from the app: accepted, members-only notes appear");
+  await page.click("#sheet-close");
+  check(await page.isHidden("#fab-note"), "app: the New note button is only on Home");
+
+  // A full group: the waiting list
+  await page.fill("#explore-search", "Spree");
+  await page.waitForTimeout(400);
+  await page.click('#explore-results [data-garden="demo-spree"]');
+  check((await page.textContent("#sheet .places")).trim() === "Full: all 2 places are taken" && (await page.textContent("#app-join button[type=submit]")) === "Join the waiting list", "app: a full group offers the waiting list");
+  await page.fill("#app-join-message", "Happy to wait.");
+  await page.fill("#app-join-growing", "Beans");
+  await page.click("#app-join button[type=submit]");
+  check((await page.textContent("#sheet-flash")).startsWith("You're on the waiting list") && await page.locator("#app-leave-waiting").count() === 1, "app: you're on the waiting list");
+  await page.click("#app-leave-waiting");
+  check(await page.locator("#app-join").count() === 1, "app: you can leave the waiting list");
+  await page.click("#sheet-close");
+
+  // Start a group from the app; join requests go to the bottom, and fold away after 3
+  await page.fill("#explore-search", "Allmende");
+  await page.waitForTimeout(400);
+  await page.click('#explore-results [data-garden="w332251381"]');
+  await page.click("#app-start button[type=submit]");
+  check((await page.textContent("#app-start-status")) === "One field is still empty.", "app: starting a group needs a description");
+  await page.fill("#app-start-about", "Beds 40 to 44. We meet Sundays at 11.");
+  await page.fill("#app-start-places", "2");
+  await page.click("#app-start button[type=submit]");
+  check((await page.textContent("#sheet-flash")).startsWith("Your group is ready") && await page.locator("#sheet-body > :last-child.sheet-requests .request-card").count() === 2, "app: your new group, with its join requests at the bottom");
+  await page.evaluate(() => { // 3 more requests, as if the group were popular
+    const state = JSON.parse(localStorage.getItem("garden-community-v1"));
+    const group = state.groups.find((g) => g.gardenId === "w332251381");
+    for (const name of ["Mia", "Jonas", "Lea"]) group.requests.push({ id: `extra-${name}`, name, growing: "Beans", message: "Hello!", date: "2026-10-20" });
+    localStorage.setItem("garden-community-v1", JSON.stringify(state));
+  });
+  await page.click("#sheet-close");
+  await page.click('#explore-results [data-garden="w332251381"]');
+  check(await page.locator(".sheet-requests > .request-list .request-card").count() === 3 && (await page.textContent(".more-requests summary")) === "Show all 5 requests" && await page.locator(".more-requests:not([open])").count() === 1, "app: after 3 requests the rest fold away");
+  await page.locator(".request-card", { hasText: "Yusuf" }).locator("[data-approve]").click();
+  check((await page.textContent("#app-requests-status")).startsWith("Yusuf is now a member") && await page.locator("#app-requests-status.is-success").count() === 1, "app: approving says so next to the requests");
+  check(await page.locator(".sheet-requests [data-approve]:disabled").count() === 4, "app: the group is full, so Approve is off");
+  await page.click("#sheet .group-edit summary");
+  await page.fill("#app-edit-places", "4");
+  await page.fill("#app-edit-about", "Beds 40 to 44. New: Wednesdays too.");
+  await page.click("#app-edit button[type=submit]");
+  check((await page.textContent("#sheet-flash")) === "Group details saved." && (await page.textContent("#sheet .places")).trim() === "2 of 4 places taken · 2 places free" && await page.locator(".sheet-requests [data-approve]:disabled").count() === 0, "app: the owner can change the description and places");
   await page.click("#sheet-close");
   await goTab(page, "home");
   check((await page.textContent("#community-updates")).includes("Sonnenbeet Wedding") && await page.locator("#community-updates .note-card").count() > 0, "home: updates from your garden community");

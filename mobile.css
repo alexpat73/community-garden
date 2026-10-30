@@ -15,6 +15,7 @@ body.app{
     height: 100vh;
     height: 100dvh; /* follows the phone's browser bars */
     overflow: hidden;
+    overflow: clip; /* like hidden, but can't be scrolled by focus either (newer browsers) */
     background-color: var(--bg);
 }
 .app .screens{
@@ -247,32 +248,6 @@ body.app{
     gap: 8px;
     min-height: 56px;
 }
-.checklist{
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.checklist label{
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 10px 0;
-    border-top: 1px solid var(--line);
-}
-.checklist input{
-    width: 22px;
-    height: 22px;
-    margin: 0;
-    flex: none;
-}
-.checklist input:checked + span{
-    text-decoration: line-through;
-    opacity: 0.6;
-}
-.jobs-progress{
-    color: var(--accent);
-    font-weight: 600;
-}
 .chips{
     display: flex;
     flex-wrap: wrap;
@@ -334,6 +309,45 @@ body.app{
 }
 .app .harvest-spot{
     overflow: hidden;
+}
+
+/* "New note": a round button that stays above the tab bar on Home */
+.app .fab{
+    position: absolute;
+    right: 16px;
+    bottom: calc(env(safe-area-inset-bottom) + 76px);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 56px;
+    padding: 0 20px;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.app .screens.home-mode{
+    padding-bottom: 96px; /* so the last card can scroll above the button */
+}
+/* In the app the pop-up appears at the top, clear of the New note button */
+.app .toast{
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 12px);
+    bottom: auto;
+    transform: translate(-50%, -16px);
+}
+.app .toast.show{
+    transform: translate(-50%, 0);
+}
+.sheet-requests{
+    margin-top: 24px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+.more-requests summary{
+    color: var(--link);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
 }
 
 /* ---------- Explore ---------- */

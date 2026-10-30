@@ -38,6 +38,19 @@ function plantsFor(month, stage) {
   return PLANTS.filter((p) => (p[stage] || []).includes(month));
 }
 
+// "Kürbis Straße" and "kurbis strasse" should match each other.
+const simplify = (text) => String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss").toLowerCase();
+
+// Does the plant's English or German name contain the searched text? ("kurbis" finds Kürbis)
+function plantMatches(p, text) {
+  return simplify(`${p.name} ${p.de}`).includes(simplify(text.trim()));
+}
+
+// What a plant needs in a month, e.g. ["Sow outdoors", "Harvest"].
+function plantJobsIn(p, month) {
+  return STAGES.filter((s) => (p[s.key] || []).includes(month)).map((s) => s.label);
+}
+
 // [10, 11, 12, 1, 2] -> "Oct-Feb", [2, 3, 9, 10] -> "Feb-Mar, Sep-Oct"
 function formatMonths(list) {
   if (!list || !list.length) return "";
@@ -173,17 +186,20 @@ function faqHtml() {
 }
 
 // Live 7-day forecast from Open-Meteo (free, no API key needed).
+// The forecast is for one of Berlin's districts: the one picked last time, else the district
+// in the app profile, else Mitte.
 function setupForecast() {
   const select = $("#city");
-  select.innerHTML = CITIES.map((c, i) => `<option value="${i}">${esc(c.name)}</option>`).join("");
-  const saved = CITIES.findIndex((c) => c.name === storageGet(CITY_KEY));
-  select.value = String(saved >= 0 ? saved : 0);
+  select.innerHTML = WEATHER_DISTRICTS.map((d, i) => `<option value="${i}">${esc(d.name)}</option>`).join("");
+  const byName = (name) => WEATHER_DISTRICTS.findIndex((d) => d.name === name);
+  const index = [storageGet(CITY_KEY), loadAppSettings().district, "Mitte"].map(byName).find((i) => i >= 0);
+  select.value = String(index);
 
   select.addEventListener("change", () => {
-    storageSet(CITY_KEY, CITIES[select.value].name);
-    loadForecast(CITIES[select.value]);
+    storageSet(CITY_KEY, WEATHER_DISTRICTS[select.value].name);
+    loadForecast(WEATHER_DISTRICTS[select.value]);
   });
-  loadForecast(CITIES[select.value]);
+  loadForecast(WEATHER_DISTRICTS[select.value]);
 }
 
 let forecastRequest = 0;
@@ -257,9 +273,8 @@ function renderMonth() {
     </dl>
     <p class="small">Long-term averages for central Germany. The north is a little milder in winter; the south and higher ground are colder. Check the live forecast on the home page before planting out.</p>`;
 
-  $("#jobs").innerHTML = `
-    <h2>Jobs for ${m.name}</h2>
-    <ul>${m.jobs.map((job) => `<li>${esc(job)}</li>`).join("")}</ul>`;
+  $("#jobs").innerHTML = `<h2>Jobs for ${m.name}</h2><div class="jobs-box" id="jobs-box"></div>`;
+  setupJobs($("#jobs-box"), n); // tick jobs off and add your own; the app's Home shares this month's list
 
   $("#sow").innerHTML = `
     <h2>Sow</h2>
@@ -310,9 +325,9 @@ function renderPlants() {
   const now = currentMonth();
   const types = [...new Set(PLANTS.map((p) => p.type))];
 
+  // The whole year as a table (folded away under the list)
   const head = `<tr><th>Plant</th>${MONTHS.map((m, i) =>
     `<th class="${i + 1 === now ? "now" : ""}">${m.short}</th>`).join("")}</tr>`;
-
   const body = types.map((type) => {
     const rows = PLANTS.filter((p) => p.type === type).map((p) => {
       const cells = MONTHS.map((m, i) => {
@@ -324,47 +339,142 @@ function renderPlants() {
     }).join("");
     return `<tr class="group"><th colspan="13">${type}</th></tr>${rows}`;
   }).join("");
-
   $("#calendar").innerHTML = `<thead>${head}</thead><tbody>${body}</tbody>`;
 
-  $("#plant-list").innerHTML = types.map((type) => `
-    <h2 class="group-title">${type}</h2>
-    ${PLANTS.filter((p) => p.type === type).map(plantDetails).join("")}`).join("");
+  // The list of plant cards, with a search and filters
+  $("#plant-type").insertAdjacentHTML("beforeend", types.map((type) => `<option>${esc(type)}</option>`).join(""));
+  for (const option of document.querySelectorAll("#plant-when option[data-text]")) {
+    option.textContent = `${option.dataset.text} ${MONTHS[now - 1].name}`;
+  }
+  $("#plant-list").innerHTML = PLANTS.map((p) => plantDetails(p)).join("");
+  renderPhotoCredits();
 
-  // The plant sections are created by JavaScript, so jump to #tomato etc. ourselves.
-  if (location.hash) {
-    const target = document.getElementById(location.hash.slice(1));
-    if (target) target.scrollIntoView();
+  const form = $("#plant-filters");
+  function filter() {
+    const text = $("#plant-search").value;
+    const type = $("#plant-type").value;
+    const when = $("#plant-when").value;
+    const easy = $("#plant-easy").checked;
+    let shown = 0;
+    for (const p of PLANTS) {
+      const jobs = plantJobsIn(p, now);
+      const match = plantMatches(p, text) && (!type || p.type === type) && (!easy || p.difficulty === "Easy")
+        && (!when || (when === "any" && jobs.length > 0)
+          || (when === "sow" && jobs.some((job) => job !== "Harvest")) || (when === "harvest" && jobs.includes("Harvest")));
+      document.getElementById(p.id).hidden = !match;
+      if (match) shown++;
+    }
+    $("#plant-count").textContent = shown === PLANTS.length ? `All ${shown} plants` : `${shown} of ${PLANTS.length} plants`;
+    $("#plant-empty").hidden = shown > 0;
+  }
+  form.addEventListener("input", filter);
+  form.addEventListener("change", filter);
+  form.addEventListener("submit", (event) => event.preventDefault()); // Enter in the search box stays on the page
+  $("#plant-reset").addEventListener("click", () => {
+    form.reset();
+    filter();
+    $("#plant-search").focus();
+  });
+  filter();
+
+  // A link from the year table shows that plant, even if the filters hid it.
+  $("#calendar").addEventListener("click", (event) => {
+    const link = event.target.closest('a[href^="#"]');
+    if (link && document.getElementById(link.hash.slice(1))?.hidden) {
+      form.reset();
+      filter();
+    }
+  });
+
+  // The plant cards are created by JavaScript, so jump to #tomato etc. ourselves: straight there,
+  // not the page's smooth scroll, and again once the font has loaded (it changes the cards' height).
+  const target = location.hash && document.getElementById(location.hash.slice(1));
+  if (target) {
+    const jump = () => target.scrollIntoView({ behavior: "instant" });
+    jump();
+    document.fonts?.ready.then(jump);
   }
 }
 
-function plantDetails(p) {
+// Photos of a plant at three stages, from plant-photos.js (small, and loaded only when scrolled to).
+function stagePhotos(p) {
+  const photos = (typeof PLANT_PHOTOS !== "undefined" && PLANT_PHOTOS[p.id]) || [];
+  if (!photos.length) return "";
+  const words = { Seedling: "as a seedling", Growing: "growing", Ready: p.type === "Flowers" ? "in flower" : "ready to harvest" };
+  return `<ul class="stage-photos">${photos.map((photo) => `<li><figure>
+      <img src="${esc(photo.src)}" width="240" height="180" loading="lazy" alt="${esc(`${p.name} ${words[photo.stage]}`)}">
+      <figcaption>${esc(photo.stage)}</figcaption></figure></li>`).join("")}</ul>`;
+}
+
+// One plant: photos, when to do what, what to do this month, and the details in a fold-out.
+// Used on the All Plants page and in the app's plant sheet (open: the details start unfolded).
+function plantDetails(p, open = false) {
+  const month = currentMonth();
   const when = STAGES
     .filter((s) => p[s.key] && p[s.key].length)
-    .map((s) => `<dt>${s.label}</dt><dd>${formatMonths(p[s.key])}${p.notes && p.notes[s.key] ? ` (${esc(p.notes[s.key])})` : ""}</dd>`)
+    .map((s) => `<li><strong>${s.label}:</strong> ${formatMonths(p[s.key])}${p.notes && p.notes[s.key] ? `, ${esc(p.notes[s.key])}` : ""}</li>`)
     .join("");
+  const jobs = plantJobsIn(p, month);
   return `
-    <section class="plant" id="${p.id}">
+    <article class="plant" id="${p.id}">
       <h3>${esc(p.name)} <span class="de">(${esc(p.de)})</span></h3>
-      <dl class="facts">
-        ${when}
-        <dt>Spacing</dt><dd>${esc(p.spacing)}</dd>
-        <dt>Sun</dt><dd>${esc(p.sun)}</dd>
-        <dt>Water</dt><dd>${esc(p.water)}</dd>
-        <dt>Difficulty</dt><dd>${esc(p.difficulty)}${p.tender ? " · frost-tender" : ""}</dd>
-        <dt>Good neighbours</dt><dd>${p.good.length ? esc(p.good.join(", ")) : "-"}</dd>
-        <dt>Bad neighbours</dt><dd>${p.bad.length ? esc(p.bad.join(", ")) : "-"}</dd>
-      </dl>
-      <p class="tip">${esc(p.tip)}</p>
-    </section>`;
+      <p class="plant-tags"><span class="tag">${esc(p.type)}</span> <span class="tag">${esc(p.difficulty)}</span>${p.tender ? ' <span class="tag">Frost-tender</span>' : ""}</p>
+      ${stagePhotos(p)}
+      <ul class="plant-when">${when}</ul>
+      ${jobs.length ? `<p class="plant-now">In ${MONTHS[month - 1].name}: ${esc(jobs.join(", ").toLowerCase())}</p>` : ""}
+      <details class="plant-more"${open ? " open" : ""}>
+        <summary>Spacing, sun, water and a tip</summary>
+        <dl class="facts">
+          <dt>Spacing</dt><dd>${esc(p.spacing)}</dd>
+          <dt>Sun</dt><dd>${esc(p.sun)}</dd>
+          <dt>Water</dt><dd>${esc(p.water)}</dd>
+          <dt>Difficulty</dt><dd>${esc(p.difficulty)}${p.tender ? " · frost-tender" : ""}</dd>
+          <dt>Good neighbours</dt><dd>${p.good.length ? esc(p.good.join(", ")) : "-"}</dd>
+          <dt>Bad neighbours</dt><dd>${p.bad.length ? esc(p.bad.join(", ")) : "-"}</dd>
+        </dl>
+        <p class="tip">${esc(p.tip)}</p>
+      </details>
+    </article>`;
+}
+
+// Every photo's author and licence (they are free to use only with this credit).
+function renderPhotoCredits() {
+  const list = $("#photo-credits");
+  if (!list || typeof PLANT_PHOTOS === "undefined") return;
+  list.innerHTML = PLANTS.filter((p) => PLANT_PHOTOS[p.id]).map((p) => `<li><strong>${esc(p.name)}:</strong> ${PLANT_PHOTOS[p.id].map((photo) =>
+    `<a href="${esc(photo.page)}">${esc(photo.stage.toLowerCase())}</a> by ${esc(photo.author)}, ${photo.licenseUrl
+      ? `<a href="${esc(photo.licenseUrl)}">${esc(photo.license)}</a>` : esc(photo.license)}`).join("; ")}</li>`).join("");
 }
 
 // ---------- Form helpers (notes page and garden groups) ----------
 
-// A status line under a form, in the error colour when isError is true.
-function showStatus(el, message, isError = false) {
+// A status line under a form: "error" (coral), "success" (green, with a check mark) or plain "info".
+// (true still means "error", so older calls keep working.)
+function showStatus(el, message, kind = "info") {
+  if (kind === true) kind = "error";
   el.textContent = message;
-  el.classList.toggle("is-error", isError);
+  el.classList.toggle("is-error", kind === "error");
+  el.classList.toggle("is-success", kind === "success" && Boolean(message));
+}
+
+// A short green pop-up confirming that something was saved or sent (visibility of system status).
+// Screen readers already hear the status line next to the form, so the pop-up is hidden from them.
+let toastTimer = null;
+function toast(message) {
+  let el = document.getElementById("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    el.className = "toast";
+    el.setAttribute("aria-hidden", "true");
+    (document.querySelector(".phone") || document.body).append(el); // inside the phone frame in the app
+  }
+  el.textContent = `✓ ${message}`;
+  el.classList.remove("show");
+  void el.offsetWidth; // restart the animation if one is already showing
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
 }
 
 // Every field with a data-error message is required. The returned check() marks each empty
@@ -400,6 +510,119 @@ function charCounter(field, counter) {
   return update;
 }
 
+// ---------- A month's jobs: the built-in ones from data.js plus your own ----------
+
+// Saved for the next time each month comes round (this year's October, next year's March), so the
+// month page and the app's Home share the same list for the current month.
+function jobsKey(month) {
+  const now = new Date();
+  return `garden-jobs-${now.getFullYear() + (month < now.getMonth() + 1 ? 1 : 0)}-${month}`;
+}
+
+function loadJobs(month) {
+  try {
+    const saved = JSON.parse(storageGet(jobsKey(month)));
+    if (Array.isArray(saved)) return { done: saved, custom: [] }; // older format: only the ticks
+    if (saved && typeof saved === "object") {
+      return {
+        done: Array.isArray(saved.done) ? saved.done.filter(Number.isInteger) : [],
+        custom: Array.isArray(saved.custom) ? saved.custom.filter((job) => job && typeof job.text === "string") : [],
+      };
+    }
+  } catch {
+    // broken: start empty
+  }
+  return { done: [], custom: [] };
+}
+const saveJobs = (month, jobs) => storageSet(jobsKey(month), JSON.stringify(jobs));
+
+// Fills box with the month's checklist and an "Add a job" form, and keeps it up to date.
+function setupJobs(box, month) {
+  const builtIn = MONTHS[month - 1].jobs;
+  let justAdded = null;
+
+  function render() {
+    const jobs = loadJobs(month);
+    const total = builtIn.length + jobs.custom.length;
+    const done = jobs.done.filter((i) => i < builtIn.length).length + jobs.custom.filter((job) => job.done).length;
+    box.innerHTML = `
+      <p class="jobs-progress" aria-live="polite">${total && done === total ? `All ${total} done. Well done!` : `${done} of ${total} done`}</p>
+      <ul class="checklist">
+        ${builtIn.map((job, i) => `<li><label><input type="checkbox" data-job="${i}"${jobs.done.includes(i) ? " checked" : ""}> <span>${esc(job)}</span></label></li>`).join("")}
+        ${jobs.custom.map((job) => `<li class="custom-job${job.id === justAdded ? " is-new" : ""}">
+          <label><input type="checkbox" data-custom="${esc(job.id)}"${job.done ? " checked" : ""}> <span>${esc(job.text)}</span></label>
+          <button type="button" class="remove-job" data-remove="${esc(job.id)}" aria-label="Remove “${esc(job.text)}”">✕</button></li>`).join("")}
+      </ul>
+      <form class="add-job" novalidate>
+        <label class="visually-hidden" for="new-job-${month}">Add your own job</label>
+        <input type="text" id="new-job-${month}" maxlength="100" required placeholder="Add your own job, e.g. Fix the shed door"
+               data-error="Write the job first." aria-describedby="new-job-${month}-error">
+        <button type="submit">Add</button>
+      </form>
+      <p class="field-error" id="new-job-${month}-error"></p>
+      <p class="form-status" role="status"></p>`;
+    justAdded = null;
+  }
+
+  const status = (message, kind) => showStatus(box.querySelector(".form-status"), message, kind);
+
+  box.addEventListener("change", (event) => {
+    const tick = event.target;
+    const jobs = loadJobs(month);
+    if (tick.dataset.job !== undefined) {
+      const i = Number(tick.dataset.job);
+      jobs.done = tick.checked ? [...new Set([...jobs.done, i])] : jobs.done.filter((d) => d !== i);
+    } else if (tick.dataset.custom) {
+      const job = jobs.custom.find((j) => j.id === tick.dataset.custom);
+      if (job) job.done = tick.checked;
+    } else {
+      return;
+    }
+    saveJobs(month, jobs);
+    const total = builtIn.length + jobs.custom.length;
+    const done = jobs.done.filter((i) => i < builtIn.length).length + jobs.custom.filter((j) => j.done).length;
+    box.querySelector(".jobs-progress").textContent = total && done === total ? `All ${total} done. Well done!` : `${done} of ${total} done`;
+  });
+
+  box.addEventListener("input", (event) => { // typing clears the "write the job first" message
+    if (event.target.closest(".add-job") && event.target.value.trim()) {
+      event.target.removeAttribute("aria-invalid");
+      box.querySelector(".field-error").textContent = "";
+    }
+  });
+
+  box.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = event.target.querySelector("input");
+    const text = input.value.trim();
+    if (!text) {
+      input.setAttribute("aria-invalid", "true");
+      box.querySelector(".field-error").textContent = input.dataset.error;
+      return input.focus();
+    }
+    const jobs = loadJobs(month);
+    justAdded = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    jobs.custom.push({ id: justAdded, text, done: false });
+    if (!saveJobs(month, jobs)) return status("Your browser is blocking storage, so the job couldn't be saved.", "error");
+    render();
+    status("Job added.", "success");
+    toast("Job added");
+    box.querySelector("input[type=text]").focus();
+  });
+
+  box.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove]");
+    if (!button) return;
+    const jobs = loadJobs(month);
+    jobs.custom = jobs.custom.filter((j) => j.id !== button.dataset.remove);
+    saveJobs(month, jobs);
+    render();
+    status("Job removed.", "success");
+  });
+
+  render();
+}
+
 // ---------- Notes page ----------
 
 function renderNotesPage() {
@@ -410,11 +633,12 @@ function renderNotesPage() {
   form.elements.date.value = todayISO();
   $("#plant-names").innerHTML = PLANTS.map((p) => `<option value="${esc(p.name)}">`).join("");
 
+  let justSaved = null; // the new note gets a short highlight
   function draw() {
     const sorted = [...notes].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
     $("#notes-list").innerHTML = sorted.length
       ? sorted.map((note) => `
-          <li>
+          <li${note.id === justSaved ? ' class="is-new"' : ""}>
             <strong>${esc(formatDate(note.date))}</strong> · ${esc(note.kind)}${note.plant ? ` · ${esc(note.plant)}` : ""}
             ${note.text ? `<br><span class="note-text">${esc(note.text)}</span>` : ""}
             ${notePhoto(note)}
@@ -450,7 +674,8 @@ function renderNotesPage() {
       plant: form.elements.plant.value.trim(),
       text: noteText.value.trim(),
     });
-    if (persist()) setStatus("Note saved.");
+    justSaved = notes[notes.length - 1].id;
+    if (persist()) { setStatus("Note saved.", "success"); toast("Note saved"); }
     form.elements.plant.value = "";
     noteText.value = "";
     updateCounter();
@@ -461,7 +686,7 @@ function renderNotesPage() {
     const button = event.target.closest(".delete");
     if (!button || !confirm("Delete this note?")) return;
     notes = notes.filter((note) => String(note.id) !== button.dataset.id);
-    if (persist()) setStatus("Note deleted.");
+    if (persist()) { setStatus("Note deleted.", "success"); toast("Note deleted"); }
     draw();
   });
 
@@ -490,7 +715,7 @@ function renderNotesPage() {
         });
         added++;
       }
-      if (persist()) setStatus(`Loaded ${added} new note${added === 1 ? "" : "s"} from ${file.name}.`);
+      if (persist()) { setStatus(`Loaded ${added} new note${added === 1 ? "" : "s"} from ${file.name}.`, "success"); toast(`${added} notes loaded`); }
       draw();
     } catch {
       setStatus("That file doesn't look like a garden notes file.", true);

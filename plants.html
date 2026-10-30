@@ -22,16 +22,54 @@
         </ul>
     </nav>
 
-    <p class="intro">The whole year at a glance for a German garden. The highlighted column is this month.</p>
-    <p class="legend"><strong>I</strong> = start indoors · <strong>S</strong> = sow outdoors · <strong>P</strong> = plant out · <strong>H</strong> = harvest</p>
+    <p class="intro">Every plant in this guide, with photos of how it looks as a seedling, while it grows and when it's ready. Search for a plant or narrow the list down.</p>
 
-    <!-- Filled by app.js -->
-    <div class="table-wrap">
-        <table class="calendar" id="calendar"></table>
-    </div>
-    <div class="plant-list" id="plant-list"></div>
+    <main class="plants-page">
+        <form class="plant-filters" id="plant-filters" role="search" aria-label="Find a plant">
+            <div class="field">
+                <label for="plant-search">Search</label>
+                <input type="search" id="plant-search" placeholder="Name, in English or German" autocomplete="off">
+            </div>
+            <div class="field">
+                <label for="plant-type">Type</label>
+                <select id="plant-type"><option value="">All types</option></select>
+            </div>
+            <div class="field">
+                <label for="plant-when">When</label>
+                <select id="plant-when">
+                    <option value="">Any time of year</option>
+                    <option value="any" data-text="Something to do in">Something to do this month</option>
+                    <option value="sow" data-text="Sow or plant in">Sow or plant this month</option>
+                    <option value="harvest" data-text="Harvest in">Harvest this month</option>
+                </select>
+            </div>
+            <label class="check-field"><input type="checkbox" id="plant-easy"> Easy for beginners only</label>
+        </form>
+        <p class="plant-count" id="plant-count" aria-live="polite"></p>
+        <p class="plant-empty" id="plant-empty" hidden>No plant matches. Try another word or fewer filters.
+            <button type="button" class="button-secondary" id="plant-reset">Show all plants</button></p>
+
+        <!-- Filled by app.js -->
+        <div class="plant-cards" id="plant-list"></div>
+
+        <details class="year-table">
+            <summary>The whole year as a table</summary>
+            <p>The highlighted column is this month.</p>
+            <p class="legend"><strong>I</strong> = start indoors · <strong>S</strong> = sow outdoors · <strong>P</strong> = plant out · <strong>H</strong> = harvest</p>
+            <div class="table-wrap">
+                <table class="calendar" id="calendar"></table>
+            </div>
+        </details>
+
+        <details class="photo-credits">
+            <summary>Photo credits</summary>
+            <p>All photos come from <a href="https://commons.wikimedia.org/">Wikimedia Commons</a> and have a free licence. They were cropped and made smaller for this site. Each link opens the original photo.</p>
+            <ul id="photo-credits"></ul>
+        </details>
+    </main>
 
     <script src="data.js"></script>
+    <script src="plant-photos.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

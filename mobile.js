@@ -10,8 +10,7 @@ const TABS = ["home", "explore", "settings"];
 const NOTE_KINDS = ["Sowed", "Planted", "Harvested", "Watered / fed", "Problem", "Other"];
 const RESULTS_PAGE = 20;
 
-const icon = (name) => `<svg class="icon" aria-hidden="true"><use href="${ICONS}#${name}"></use></svg>`;
-const jobsKey = (month) => `garden-jobs-${new Date().getFullYear()}-${month}`;
+// icon() comes from community.js
 const capitalise = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 let app = loadAppSettings(); // profile + settings (app.js)
@@ -64,7 +63,9 @@ function openSheet(title, html) {
   sheet.hidden = false;
   sheet.scrollTop = 0;
   if (!history.state?.sheet) history.pushState({ sheet: true }, ""); // the phone's Back button closes it
-  $("#sheet-close").focus();
+  // preventScroll: the sheet is still sliding in from below, and the browser would otherwise
+  // scroll the whole phone up to show the button
+  $("#sheet-close").focus({ preventScroll: true });
   return $("#sheet-body");
 }
 
@@ -129,6 +130,7 @@ function showWelcome(message = "") {
   $("#welcome").hidden = false;
   $("#screens").hidden = true;
   $("#tabbar").hidden = true;
+  $("#fab-note").hidden = true;
   $("#welcome-title").textContent = app.name ? `Welcome back, ${app.name}` : "Community Garden";
   $("#welcome-name").value = app.name;
   $("#welcome-district").value = app.district;
@@ -159,6 +161,8 @@ function route() {
   const tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
   for (const t of TABS) $(`#tab-${t}`).hidden = t !== tab;
   $("#screens").classList.toggle("explore-mode", tab === "explore");
+  $("#screens").classList.toggle("home-mode", tab === "home");
+  $("#fab-note").hidden = tab !== "home";
   for (const link of document.querySelectorAll(".tabbar a")) {
     if (link.dataset.tab === tab) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
@@ -179,19 +183,13 @@ function setupHome() {
   }).observe($("#forecast-summary"), { childList: true, characterData: true, subtree: true });
 
   $("#update-garden").addEventListener("click", () => openUpdateSheet());
+  $("#fab-note").addEventListener("click", () => openUpdateSheet());
   $("#add-note").addEventListener("click", () => openUpdateSheet());
   $("#photo-note").addEventListener("click", () => openUpdateSheet({ camera: true }));
   $("#all-notes").addEventListener("click", openAllNotesSheet);
+  $("#all-plants").addEventListener("click", openAllPlantsSheet);
 
-  $("#jobs-list").addEventListener("change", (event) => {
-    const box = event.target.closest("[data-job]");
-    if (!box) return;
-    const now = currentMonth();
-    const done = new Set(readList(jobsKey(now)));
-    if (box.checked) done.add(Number(box.dataset.job)); else done.delete(Number(box.dataset.job));
-    storageSet(jobsKey(now), JSON.stringify([...done]));
-    showJobsProgress(done.size);
-  });
+  setupJobs($("#jobs-box"), currentMonth()); // app.js: the same checklist as the month page, with your own jobs
 
   $("#season").addEventListener("click", (event) => {
     const chip = event.target.closest("[data-plant]");
@@ -231,7 +229,8 @@ function setupHome() {
     storageSet(SUGGESTIONS_KEY, JSON.stringify(list));
     $("#suggest-text").value = "";
     updateCount();
-    showStatus($("#suggest-status"), `Thanks! In this prototype, suggestions are saved on this phone (${plural(list.length, "suggestion")} so far).`);
+    showStatus($("#suggest-status"), `Thanks! In this prototype, suggestions are saved on this phone (${plural(list.length, "suggestion")} so far).`, "success");
+    toast("Suggestion sent");
   });
 }
 
@@ -240,12 +239,7 @@ function renderHome() {
   const month = MONTHS[now - 1];
   $("#month-chip").textContent = `It's ${month.name} · ${capitalise(month.season)}`;
 
-  // Jobs
-  const done = new Set(readList(jobsKey(now)));
   $("#jobs-title").textContent = `${month.name} jobs`;
-  $("#jobs-list").innerHTML = month.jobs.map((job, i) => `
-    <li><label><input type="checkbox" data-job="${i}"${done.has(i) ? " checked" : ""}> <span>${esc(job)}</span></label></li>`).join("");
-  showJobsProgress(done.size);
 
   // In season
   const groups = [["harvest", "Ready to harvest"], ["outdoors", "Sow outdoors"], ["indoors", "Start indoors"], ["plant", "Plant out"]];
@@ -266,10 +260,6 @@ function renderHome() {
   renderMyNotes();
 }
 
-function showJobsProgress(doneCount) {
-  const total = MONTHS[currentMonth() - 1].jobs.length;
-  $("#jobs-progress").textContent = doneCount === total ? `All ${total} done. Well done!` : `${doneCount} of ${total} done`;
-}
 
 function renderUpdates() {
   community = loadState();
@@ -304,10 +294,10 @@ function sortedNotes() {
   return loadNotes().sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
 }
 
-function renderMyNotes() {
+function renderMyNotes(newId = null) {
   const notes = sortedNotes();
   $("#app-notes").innerHTML = notes.length
-    ? notes.slice(0, 3).map(noteSummary).join("")
+    ? notes.slice(0, 3).map((n) => noteSummary(n).replace("<li>", n.id === newId ? '<li class="is-new">' : "<li>")).join("")
     : '<li class="empty">No notes yet. Tap "Add a note" after your next visit to the plot.</li>';
   $("#all-notes").hidden = notes.length <= 3;
   $("#all-notes").textContent = `See all ${notes.length}`;
@@ -322,14 +312,40 @@ function openAllNotesSheet() {
 
 function openPlantSheet(id) {
   const plant = PLANTS.find((p) => p.id === id);
-  if (plant) openSheet(plant.name, `<div class="sheet-plant">${plantDetails(plant)}</div>`);
+  if (plant) openSheet(plant.name, `<div class="sheet-plant">${plantDetails(plant, true)}</div>`);
 }
 
 function openAllPlantsSheet() {
   const types = [...new Set(PLANTS.map((p) => p.type))];
-  const body = openSheet("All plants", types.map((type) => `<h3>${esc(type)}</h3><div class="chips">${PLANTS.filter((p) => p.type === type)
-    .map((p) => `<button type="button" class="chip" data-plant="${esc(p.id)}">${esc(p.name)}</button>`).join("")}</div>`).join(""));
-  body.addEventListener("click", (event) => {
+  const box = openSheet("All plants", `<div class="all-plants">
+    <form class="note-form" role="search" aria-label="Find a plant">
+      <div class="field">
+        <label for="app-plant-search">Search</label>
+        <input type="search" id="app-plant-search" placeholder="Name, in English or German" autocomplete="off">
+      </div>
+      <label class="check-row"><input type="checkbox" id="app-plant-easy"> Easy for beginners only</label>
+    </form>
+    <p class="small" id="app-plant-count" aria-live="polite"></p>
+    ${types.map((type) => `<section data-type><h3>${esc(type)}</h3><div class="chips">${PLANTS.filter((p) => p.type === type)
+      .map((p) => `<button type="button" class="chip" data-plant="${esc(p.id)}">${esc(p.name)}</button>`).join("")}</div></section>`).join("")}
+  </div>`).querySelector(".all-plants");
+
+  const filter = () => {
+    const text = $("#app-plant-search").value;
+    const easy = $("#app-plant-easy").checked;
+    let shown = 0;
+    for (const chip of box.querySelectorAll("[data-plant]")) {
+      const p = PLANTS.find((plant) => plant.id === chip.dataset.plant);
+      chip.hidden = !(plantMatches(p, text) && (!easy || p.difficulty === "Easy"));
+      if (!chip.hidden) shown++;
+    }
+    for (const group of box.querySelectorAll("[data-type]")) group.hidden = !group.querySelector("[data-plant]:not([hidden])");
+    $("#app-plant-count").textContent = shown === PLANTS.length ? `All ${shown} plants` : shown ? `${shown} of ${PLANTS.length} plants` : "No plant matches. Try another word.";
+  };
+  filter();
+  box.addEventListener("input", filter);
+  box.addEventListener("submit", (event) => event.preventDefault());
+  box.addEventListener("click", (event) => {
     const chip = event.target.closest("[data-plant]");
     if (chip) openPlantSheet(chip.dataset.plant);
   });
@@ -408,8 +424,9 @@ function openUpdateSheet({ camera = false } = {}) {
     $("#update-text").value = "";
     updateCount();
     photo.clear();
-    showStatus($("#update-status"), "Saved to My notes.");
-    renderMyNotes();
+    showStatus($("#update-status"), "Saved to My notes.", "success");
+    toast("Note saved");
+    renderMyNotes(note.id);
   });
 
   body.querySelector("#update-growing").addEventListener("submit", (event) => {
@@ -417,7 +434,8 @@ function openUpdateSheet({ camera = false } = {}) {
     app.growing = [...event.target.querySelectorAll("input:checked")].map((box) => box.value);
     saveApp();
     const inGroups = syncMeInGroups();
-    showStatus($("#growing-status"), inGroups ? "Saved. Your garden groups show this too." : "Saved.");
+    showStatus($("#growing-status"), inGroups ? "Saved. Your garden groups show this too." : "Saved.", "success");
+    toast("Saved what you grow");
   });
 
   if (camera) $("#update-photo").click(); // straight to the camera (still inside the tap, so phones allow it)
@@ -556,46 +574,89 @@ function openGardenSheet(id, flash = "") {
   if (!garden) return;
   community = loadState();
   const accepted = processApprovals(community);
-  if (accepted.length && !flash) flash = acceptedMessage(accepted);
+  if (accepted.length && !flash) { flash = acceptedMessage(accepted); toast("Request accepted"); }
   const group = groupOfGarden(community, id);
   const status = group ? community.myStatus[group.id] : null;
   const isMember = status === "member" || status === "owner";
+  const isOwner = status === "owner" && !group.example;
   const km = here ? distanceKm(here, garden) : null;
 
   let groupHtml;
   if (!group) {
-    groupHtml = `<p>No group for this garden yet.</p>
-      <p><a href="${gardenUrl(id)}" data-desktop>Start one on the desktop site</a></p>`;
+    groupHtml = `
+      <p>No group for this garden yet. If you garden here, start one: you decide who can join.</p>
+      <form id="app-start" class="note-form" novalidate>
+        ${field("app-start-about", "About the group", `<textarea id="app-start-about" rows="3" maxlength="300" required
+          placeholder="Who you are, when you meet, who's welcome…" data-error="Write a sentence about the group." aria-describedby="app-start-about-error"></textarea>`)}
+        ${field("app-start-places", "How many places? (people or plots)", `<input type="number" id="app-start-places" min="1" max="500" required value="10"
+          inputmode="numeric" data-error="Write how many people the group has room for." aria-describedby="app-start-places-error">`)}
+        <button type="submit">Start the group</button>
+        <p class="form-status" id="app-start-status" role="status"></p>
+      </form>`;
   } else {
+    const full = !freePlaces(group);
     const shownNotes = (isMember ? group.notes : group.notes.filter((n) => n.visibility === "public"))
       .slice().sort((a, b) => b.date.localeCompare(a.date));
     const hidden = group.notes.length - shownNotes.length;
+    // Many join requests would push everything else down, so they go at the bottom; after 3 they fold away.
+    const requestCard = (r) => `<li class="request-card">
+      <p><strong>${esc(r.name)}</strong> · ${esc(formatDate(r.date))} <span class="tag">Example request</span></p>
+      <p class="note-body">${esc(r.message)}</p>
+      <p class="small">Would like to grow: ${esc(r.growing)}</p>
+      <button type="button" data-approve="${esc(r.id)}"${full ? " disabled" : ""}>Approve</button>
+      <button type="button" class="button-secondary" data-decline="${esc(r.id)}">Decline</button>
+    </li>`;
+    const requests = isOwner ? group.requests : [];
     groupHtml = `
       <p class="small">Community group run by its members, not an official page of this garden.</p>
       <p>${esc(group.description)}</p>
       <p class="group-meta">${plural(group.members.length, "member")} · started by ${esc(group.owner)}${isMember ? ` · you're ${status === "owner" ? "the owner" : "a member"}` : ""}</p>
+      <p class="places${full ? " full" : ""}">${icon("users")} ${placesLine(group)}</p>
+      ${isOwner ? `
+        <details class="group-edit">
+          <summary>Group details: description and places</summary>
+          <form id="app-edit" class="note-form" novalidate>
+            ${field("app-edit-about", "Description", `<textarea id="app-edit-about" rows="3" maxlength="300" required
+              data-error="Write a sentence about the group." aria-describedby="app-edit-about-error">${esc(group.description)}</textarea>`)}
+            ${field("app-edit-places", "Places (people or plots)", `<input type="number" id="app-edit-places" min="${group.members.length}" max="500" required
+              value="${group.places}" inputmode="numeric" data-error="Write how many people the group has room for." aria-describedby="app-edit-places-error">`)}
+            <button type="submit">Save group details</button>
+            <p class="form-status" id="app-edit-status" role="status"></p>
+          </form>
+        </details>` : ""}
       <h3>${isMember ? "Notes" : "Public notes"}</h3>
       ${shownNotes.length ? `<ul class="note-feed">${shownNotes.map((n) => noteCard(n, false)).join("")}</ul>` : '<p class="empty">No notes yet.</p>'}
       ${hidden ? `<p class="hidden-notes">${plural(hidden, "members-only note")} ${hidden === 1 ? "is" : "are"} hidden. Ask to join to read ${hidden === 1 ? "it" : "them"}.</p>` : ""}
       ${status === "pending" ? `<p class="request-status" role="status">Request sent to ${esc(group.owner)}, waiting for approval… (In this prototype, a pretend admin answers in a few seconds.)</p>` : ""}
+      ${status === "waiting" ? `<p class="request-status" role="status">You're on the waiting list. ${esc(group.owner)} will let you know when a place is free.</p>
+        <button type="button" class="button-secondary" id="app-leave-waiting">Leave the waiting list</button>` : ""}
       ${!status ? `
-        <h3>Ask to join</h3>
+        <h3>${full ? "Join the waiting list" : "Ask to join"}</h3>
         <form id="app-join" class="note-form" novalidate>
-          <p class="form-hint">All fields are required. ${esc(group.owner)} will see your request.</p>
+          <p class="form-hint">${full ? "This group is full right now. Join the waiting list and you'll hear when a place is free. " : ""}All fields are required. ${esc(group.owner)} will see your request.</p>
           ${field("app-join-name", "Your name", `<input type="text" id="app-join-name" maxlength="40" required value="${esc(app.name)}"
             data-error="Write the name the group will see." aria-describedby="app-join-name-error">`)}
           ${field("app-join-message", "Message to the group", `<textarea id="app-join-message" rows="3" maxlength="500" required
             placeholder="A little about you and why you'd like to join" data-error="Write a short message to the group." aria-describedby="app-join-message-error"></textarea>`)}
           ${field("app-join-growing", "What would you like to grow?", `<input type="text" id="app-join-growing" maxlength="100" required
             placeholder="e.g. Tomatoes and basil" data-error="Write what you'd like to grow, or 'not sure yet'." aria-describedby="app-join-growing-error">`)}
-          <button type="submit">Ask to join</button>
+          <button type="submit">${full ? "Join the waiting list" : "Ask to join"}</button>
           <p class="form-status" id="app-join-status" role="status"></p>
         </form>` : ""}
-      ${isMember ? `<p class="small"><a href="${gardenUrl(id)}" data-desktop>Post notes and see members on the desktop site</a></p>` : ""}`;
+      ${isMember ? `<p class="small"><a href="${gardenUrl(id)}" data-desktop>Post notes and see members on the desktop site</a></p>` : ""}
+      ${requests.length ? `
+        <section class="sheet-requests" aria-labelledby="app-requests-title">
+          <h3 id="app-requests-title">Join requests (${requests.length})</h3>
+          ${full ? '<p class="small">The group is full. Add places under "Group details" to accept more people.</p>' : ""}
+          <p class="form-status" id="app-requests-status" role="status"></p>
+          <ul class="request-list">${requests.slice(0, 3).map(requestCard).join("")}</ul>
+          ${requests.length > 3 ? `<details class="more-requests"><summary>Show all ${requests.length} requests</summary>
+            <ul class="request-list">${requests.slice(3).map(requestCard).join("")}</ul></details>` : ""}
+        </section>` : ""}`;
   }
 
   const body = openSheet(garden.name, `
-    ${flash ? `<p class="flash" role="status">${esc(flash)}</p>` : ""}
+    <p class="flash${flash ? " is-success" : ""}" id="sheet-flash" role="status">${esc(flash)}</p>
     <p class="garden-meta">${TYPE_NAMES[garden.type]} · ${esc(placeName(garden))}${km != null ? ` · ${formatDistance(km)} away` : ""}</p>
     ${garden.website ? `<p><a href="${esc(garden.website)}" target="_blank" rel="noopener">Garden website</a></p>` : ""}
     ${garden.example ? '<p class="small">A made-up garden for this prototype.</p>' : ""}
@@ -603,21 +664,85 @@ function openGardenSheet(id, flash = "") {
 
   if (map) { map.setView([garden.lat, garden.lon], Math.max(map.getZoom(), 15)); }
 
-  const form = body.querySelector("#app-join");
-  if (form) {
-    const check = requiredFieldsChecker(form);
-    form.addEventListener("submit", (event) => {
+  // Saves, redraws the sheet and shows the message next to what you did, or at the top of the sheet
+  // if that part is gone (e.g. after answering the last join request).
+  const done = (message, where = "#sheet-flash") => {
+    if (!saveState(community)) return showStatus($("#sheet-flash"), "This phone's storage is full, so that couldn't be saved.", true);
+    openGardenSheet(id);
+    const el = $(where) || $("#sheet-flash");
+    showStatus(el, message, "success");
+    el.scrollIntoView({ block: "nearest" });
+    toast(message.split(/[.!]/)[0]);
+    renderUpdates();
+  };
+
+  const start = body.querySelector("#app-start");
+  if (start) {
+    const check = requiredFieldsChecker(start);
+    start.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const empty = check();
+      if (empty) return showStatus($("#app-start-status"), emptyFieldsMessage(empty), true);
+      const places = Number($("#app-start-places").value);
+      if (!(places >= 1 && places <= 500)) return showStatus($("#app-start-status"), "Places must be a number from 1 to 500.", true);
+      community = loadState();
+      community.me.name = app.name;
+      const created = startGroup(community, garden, { description: $("#app-start-about").value.trim(), places });
+      const asked = created.requests.length === 1 ? "1 person has" : `${created.requests.length} people have`;
+      done(`Your group is ready. ${asked} already asked to join (example requests, at the bottom).`);
+    });
+  }
+
+  const join = body.querySelector("#app-join");
+  if (join) {
+    const check = requiredFieldsChecker(join);
+    join.addEventListener("submit", (event) => {
       event.preventDefault();
       const empty = check();
       if (empty) return showStatus($("#app-join-status"), emptyFieldsMessage(empty), true);
       community = loadState();
       community.me.name = $("#app-join-name").value.trim();
+      if (!freePlaces(group)) {
+        community.myStatus[group.id] = "waiting";
+        return done(`You're on the waiting list for ${group.name}.`);
+      }
       community.myStatus[group.id] = "pending";
       community.myRequests[group.id] = { growing: $("#app-join-growing").value.trim(), sentAt: Date.now() };
-      if (!saveState(community)) return showStatus($("#app-join-status"), "This phone's storage is full, so the request couldn't be saved.", true);
-      openGardenSheet(id);
+      done("Request sent. You'll see here when it's accepted.");
     });
   }
+
+  body.querySelector("#app-leave-waiting")?.addEventListener("click", () => {
+    community = loadState();
+    delete community.myStatus[group.id];
+    done("You left the waiting list.");
+  });
+
+  const edit = body.querySelector("#app-edit");
+  if (edit) {
+    const check = requiredFieldsChecker(edit);
+    edit.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const empty = check();
+      if (empty) return showStatus($("#app-edit-status"), emptyFieldsMessage(empty), true);
+      const places = Number($("#app-edit-places").value);
+      if (!(places >= group.members.length && places <= 500)) {
+        return showStatus($("#app-edit-status"), `Places must be at least ${group.members.length} (your members) and at most 500.`, true);
+      }
+      community = loadState();
+      const mine = community.groups.find((g) => g.id === group.id);
+      mine.description = $("#app-edit-about").value.trim();
+      mine.places = places;
+      done("Group details saved.");
+    });
+  }
+
+  body.querySelectorAll("[data-approve], [data-decline]").forEach((button) => button.addEventListener("click", () => {
+    community = loadState();
+    const mine = community.groups.find((g) => g.id === group.id);
+    done(answerRequest(mine, button.dataset.approve || button.dataset.decline, Boolean(button.dataset.approve)), "#app-requests-status");
+  }));
+
   if (status === "pending") {
     clearTimeout(approvalTimer);
     const waited = Date.now() - (community.myRequests[group.id]?.sentAt ?? 0);
@@ -647,13 +772,14 @@ function setupSettings() {
     if (!saveApp()) return showStatus($("#app-profile-status"), "Not enough space on this phone to save that photo.", true);
     syncMeInGroups();
     $("#greeting").textContent = `Welcome back, ${app.name}`;
-    showStatus($("#app-profile-status"), "Profile saved.");
+    showStatus($("#app-profile-status"), "Profile saved.", "success");
+    toast("Profile saved");
   });
 
-  const savePrefs = (message) => { saveApp(); showStatus($("#permissions-status"), message); };
+  const savePrefs = (message) => { saveApp(); showStatus($("#permissions-status"), message, "success"); };
   $("#pref-near-me").addEventListener("change", (e) => { app.prefs.nearMe = e.target.checked; savePrefs(e.target.checked ? "\"Near me\" is on." : "\"Near me\" is off and hidden."); });
   $("#pref-auto-map").addEventListener("change", (e) => { app.prefs.autoMap = e.target.checked; savePrefs(e.target.checked ? "The map loads automatically." : "Explore will ask before loading the map."); });
-  $("#pref-sounds").addEventListener("change", (e) => { storageSet(SOUNDS_KEY, e.target.checked ? "on" : "off"); showStatus($("#permissions-status"), e.target.checked ? "Sounds are on." : "Sounds are off."); });
+  $("#pref-sounds").addEventListener("change", (e) => { storageSet(SOUNDS_KEY, e.target.checked ? "on" : "off"); showStatus($("#permissions-status"), e.target.checked ? "Sounds are on." : "Sounds are off.", "success"); });
   for (const radio of document.querySelectorAll('input[name="pref-visibility"]')) {
     radio.addEventListener("change", () => { app.prefs.noteVisibility = radio.value; savePrefs(radio.value === "public" ? "New group notes will be public." : "New group notes will be for members only."); });
   }

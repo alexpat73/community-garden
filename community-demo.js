@@ -22,6 +22,7 @@ const DEMO_GROUPS = [
     name: "Sonnenbeet Wedding",
     description: "Twelve raised beds in a backyard in Wedding. We meet on Saturday mornings, share tools and swap seeds. Beginners welcome!",
     owner: "Anna",
+    places: 12, // how many people the group has room for
     members: [
       { name: "Anna", growing: ["tomato", "basil", "zucchini"] },
       { name: "Mehmet", growing: ["pepper", "chilli", "cucumber"] },
@@ -42,6 +43,7 @@ const DEMO_GROUPS = [
     name: "Kiezgarten Rixdorf",
     description: "A small neighbourhood garden behind the community centre. Shared compost, a herb spiral and a bee hotel.",
     owner: "Sophie",
+    places: 4,
     members: [
       { name: "Sophie", growing: ["chives", "parsley", "dill"] },
       { name: "Ali", growing: ["broad-bean", "onion", "garlic"] },
@@ -59,6 +61,7 @@ const DEMO_GROUPS = [
     name: "Laubenpieper an der Spree",
     description: "Allotment colony by the river. This group is for plot holders to share tips, tools and spare seedlings.",
     owner: "Klaus",
+    places: 2, // full: new people go on the waiting list
     members: [
       { name: "Klaus", growing: ["rhubarb", "potato", "leek"] },
       { name: "Birgit", growing: ["strawberry", "beetroot", "carrot"] },

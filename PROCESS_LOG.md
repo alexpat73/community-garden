@@ -421,3 +421,75 @@ A lo-fi prototype of what was built, as its own tab on the desktop site next to 
 ### Testing
 
 24 new checks, **181 in total, all passing.** The page loads cleanly, the tab sits right after FAQ on every desktop page, and every click-through works in both wireframes, with the notes following each screen.
+
+---
+
+## Entry 7 · 30 October 2026 · Nine changes from feedback
+
+### Session goal
+
+Work through a list of nine feedback points on the site and the app, most of them about seeing what's going on and finding things faster.
+
+### How the session went
+
+| # | What I asked the AI (summarised) | What the AI did | What I decided or changed |
+|---|---|---|---|
+| 1 | Nine points: a way to add notes in the app, Berlin-only weather, photos of each plant at three stages, a visible confirmation after saving or sending, checking for free places when joining a group, a description from the group owner, a simpler searchable list instead of the table, my own jobs on the to-do list, and join requests at the bottom on the phone. | Asked three questions: how to make "New note" easier to find, which Berlin places to show, and where the photos should come from. | A **floating New note button**; **Berlin's 12 districts**; photos from **Wikimedia Commons, chosen once by a script, checked by eye, saved on the site and credited**. |
+| 2 | Build it. | Built and tested it (see below). | — |
+
+### What changed, point by point
+
+1. **New note in the app:** a round "New note" button floats above the tab bar on Home and opens Update garden. It isn't shown on the other tabs, where it would cover the map and settings.
+2. **Weather:** the 12 Berlin districts replace the 11 German cities. The app starts on the district you picked when signing up; the desktop starts on Mitte.
+3. **Photos:** every plant has three small photos, seedling, growing and ready, on the All Plants page and in the app's plant sheet. All 93 are credited on the page, with the author, licence and a link to the original.
+4. **Visibility of system status (heuristic #1):** saving, sending, joining and adding a job now show a green line with a check mark next to the form, plus a short pop-up ("✓ Note saved"). A new note or job is briefly highlighted in the list.
+5. **Places:** each group shows "4 of 12 places taken · 8 free". A full group offers a **waiting list** instead of "Ask to join", and an owner can't approve more people than there are places (error prevention, #5).
+6. **The owner's description:** the owner can change the description and the number of places, on the desktop and in the app.
+7. **A simpler All Plants page (#8, aesthetic and minimalist design):** the big table became plant cards with a search (English or German names, so "kohl" finds Kohlrabi, Grünkohl and Rosenkohl) and filters: type, "Something to do in October" and "Easy for beginners only". The year table is still there, folded away. The app's "All plants" sheet got the same search.
+8. **My own jobs (#3, user control and freedom):** add, tick and remove your own jobs next to the month's built-in ones. The month page and the app share one list.
+9. **Many join requests:** in the app they sit at the bottom of the garden sheet, and after the first 3 the rest fold away under "Show all 5 requests".
+
+### Design decisions and why
+
+- **Green for "it worked", tan for "important":** the new success green (`#A8E089`) is lighter than the link green and always comes with a ✓, so it doesn't look like a link and doesn't rely on colour alone. The pop-up is hidden from screen readers, because they already hear the status line next to the form.
+- **Plant tags in neutral colours:** "Vegetables", "Easy" and "Frost-tender" are labels, not links, so they aren't green.
+- **Photos checked, then pinned:** the script searches Commons once, then every photo is looked at and its file name saved in the script, so running it again gives the same photos. Only free licences are used (public domain, CC0, CC BY, CC BY-SA).
+- **Self-hosted photos:** no request goes to Wikimedia when someone opens the page, like the font and the icons.
+
+### Problems and fixes
+
+- **The automatic photo search picked a lot of wrong photos:** a politician for lettuce, a washing machine for basil, paintings, drawings, seed-catalogue pages, mung beans for green beans and a dish for chives. The AI searched again for about 40 of the 93 photos with better search words (often the Latin or German name), looked at 6 candidates for each and picked one.
+- **Credits:** some authors' names on Commons include an e-mail request, and one photo had no author. The script now cleans the name and uses the uploader instead.
+- **Sheets opened in the wrong place:** opening a bottom sheet moved keyboard focus into it while it was still sliding up, so the browser scrolled the whole phone frame up by about 200 px. Focus now moves without scrolling, and the frame can't be scrolled at all (`overflow: clip`). An old test had only passed *because* of the bug; the tests now wait for the sheet to finish sliding in.
+- **Jumping to a plant** (e.g. from a month page to `plants.html#kale`) used the page's smooth scrolling, a slow 7,000 px glide. It now jumps straight there.
+- **Two copies of the jobs code** (desktop and app) clashed once both needed custom jobs, so there is now one shared checklist.
+
+### Testing
+
+**53 new checks, 234 in total, all passing.** They cover:
+
+- the plant search, the filters, the empty result and its reset, the 93 photo files, their credits and the jump to a plant
+- the 12 districts and the default district
+- the green lines and pop-ups, and the highlighted new note
+- adding, ticking and removing your own job, and seeing it in the app
+- the waiting list on a full group, Approve switching off when full, and the owner's edits, on the desktop and in the app
+- the New note button, starting a group from the app, and folding away extra join requests
+
+### Web optimization notes
+
+- **Photos:** cropped to 4:3, 240×180 px JPEGs, about 12 KB each (1.2 MB for all 93, down from 2.2 MB in the first try).
+  - They load lazily, so only the ones on screen are downloaded.
+  - `width` and `height` are set, so nothing jumps around while they load.
+- **The search and filters work in the browser,** with no reload.
+- **The app's offline cache moved to version 2** and now includes the plant list. Photos are kept for offline use once they've been viewed.
+
+### What I learned
+
+- Feedback items are often heuristics in disguise: "a visual check after sending" is visibility of system status, and "check for slots" is error prevention.
+- Free photo libraries need a human check: the search results looked fine as file names but often weren't what they said.
+- Screenshots catch layout bugs that the tests can't see, and a passing test can hide a bug.
+
+### Next steps
+
+- Update the lo-fi prototype with the new screens (the New note button, the plant cards, places and the waiting list).
+- Test the changes with the same people who gave the feedback.

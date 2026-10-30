@@ -12,6 +12,7 @@
     --link: #8FB37A;       /* links, tags, buttons: anything clickable, 6.5:1 */
     --link-hover: #A6C792;
     --error: #F29B86;      /* form errors, 7.2:1 */
+    --success: #A8E089;    /* "saved" / "sent" confirmations */
     --field: #283225;      /* form field background */
     --line: rgba(205, 176, 136, 0.3);
 }
@@ -238,7 +239,6 @@ a:focus-visible .thecard{
 
 /* ---------- Month page / plant info text ---------- */
 .month-info,
-.plant-list,
 .notes-page{
     max-width: 65ch;
     margin: 0 auto;
@@ -312,15 +312,166 @@ a:focus-visible .thecard{
     color: #9fd3ff;
 }
 
-/* ---------- All plants: calendar table ---------- */
+/* ---------- All plants: search, plant cards, year table ---------- */
+.plants-page{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+.plant-filters{
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.4fr auto;
+    gap: 0 16px;
+    align-items: end;
+}
+.plant-filters .field{
+    margin-bottom: 12px;
+}
+.plant-filters label:not(.check-field){
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+.plant-filters input[type="search"],
+.plant-filters select{
+    width: 100%;
+    box-sizing: border-box;
+    height: 46px;
+    margin-top: 0;
+}
+.check-field{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 46px;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+.check-field input{
+    width: 20px;
+    height: 20px;
+}
+.plant-count{
+    margin: 0 0 16px;
+    opacity: 0.75;
+}
+.plant-empty .button-secondary{
+    margin-left: 8px;
+}
+.plant-cards{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    gap: 20px;
+    align-items: start;
+}
+.plant-cards .plant{
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    padding: 16px;
+}
+.plant-cards .plant:target{ /* the dashed border replaces the card's line, without moving the card */
+    padding: 16px;
+    border-color: transparent;
+}
+.plant h3{
+    margin: 0 0 6px;
+}
+.plant-tags{
+    margin: 0;
+}
+.plant-tags .tag{ /* plain labels, not links, so not green */
+    margin-right: 4px;
+    color: var(--text);
+    border-color: var(--line);
+}
+.stage-photos{
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+.stage-photos figure{
+    margin: 0;
+}
+.stage-photos img{
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 8px;
+    background-color: var(--field); /* while the photo loads */
+}
+.stage-photos figcaption{
+    margin-top: 2px;
+    font-size: 0.85em;
+    text-align: center;
+    opacity: 0.75;
+}
+.plant-when{
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+}
+.plant-when strong{
+    color: var(--accent);
+    font-weight: 600;
+}
+.plant-now{
+    margin: 8px 0;
+    color: var(--accent);
+    font-weight: 600;
+}
+.plant-more{
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+}
+.plant-more .facts{
+    margin: 8px 0;
+}
+.plant-more .tip{
+    margin: 8px 0 0;
+}
+.year-table,
+.photo-credits{
+    margin: 32px 0 0;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+}
+.photo-credits{
+    margin-bottom: 40px;
+}
+.photo-credits p,
+.photo-credits ul{
+    max-width: 65ch;
+}
+.photo-credits li{
+    margin-bottom: 6px;
+}
+@media (max-width: 900px){
+    .plant-filters{
+        grid-template-columns: 1fr 1fr;
+    }
+    .plant-filters .field:first-child{
+        grid-column: 1 / -1;
+    }
+}
+@media (max-width: 500px){
+    .plant-filters{
+        grid-template-columns: 1fr;
+    }
+}
 .legend{
-    margin: 0 100px;
+    margin: 8px 0;
     font-size: 1.3em;
     font-weight:bolder ;
 }
 .table-wrap{
     overflow-x: auto;
-    margin: 20px 100px;
+    margin: 12px 0;
 }
 .calendar{
     border-collapse: collapse;
@@ -427,6 +578,45 @@ textarea:focus-visible{
 .field-error:empty{
     display: none;
 }
+.is-success{ /* saved / sent: green with a check mark */
+    color: var(--success);
+    font-weight: 600;
+}
+.is-success::before{
+    content: "✓ ";
+}
+.toast{ /* the short pop-up after saving or sending */
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 1000;
+    max-width: calc(100% - 32px);
+    padding: 10px 18px;
+    border-radius: 999px;
+    background-color: var(--success);
+    color: var(--bg);
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transform: translate(-50%, 16px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+}
+.toast.show{
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+.is-new{ /* a just-saved note glows green for a moment */
+    animation: just-saved 2.4s ease-out;
+}
+@keyframes just-saved{
+    from{ background-color: rgba(168, 224, 137, 0.28); box-shadow: 0 0 0 2px var(--success); }
+    to{ background-color: transparent; box-shadow: 0 0 0 2px transparent; }
+}
+@media (prefers-reduced-motion: reduce){
+    .toast{ transition: none; transform: translate(-50%, 0); }
+    .is-new{ animation: none; outline: 2px solid var(--success); }
+}
 button,
 .file-button{
     background-color: var(--link);
@@ -486,6 +676,72 @@ button:focus-visible{
     background-color: rgba(143, 179, 122, 0.15);
 }
 
+/* ---------- A month's jobs checklist (month pages and the app's Home) ---------- */
+.checklist{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.checklist label{
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+}
+.checklist input{
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    flex: none;
+}
+.checklist input:checked + span{
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+.jobs-progress{
+    color: var(--accent);
+    font-weight: 600;
+}
+.jobs-box{
+    max-width: 65ch;
+}
+.custom-job{
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    border-top: 1px solid var(--line);
+}
+.custom-job label{
+    flex: 1;
+    border-top: 0 !important;
+}
+.remove-job{ /* small ✕ next to a job you added yourself */
+    flex: none;
+    width: 40px;
+    min-height: 40px;
+    margin-top: 4px;
+    padding: 0;
+    background: none;
+    color: var(--link);
+    border: 1px solid var(--line);
+}
+button.remove-job:hover{
+    background-color: rgba(143, 179, 122, 0.15);
+}
+.add-job{
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+.add-job input{
+    flex: 1;
+    min-width: 0;
+}
+.add-job [aria-invalid="true"]{
+    border-color: var(--error);
+}
+
 /* ---------- Home: the mobile app box with its QR code ---------- */
 .app-promo{
     max-width: 65ch;
@@ -522,12 +778,22 @@ button:focus-visible{
     border-bottom: 1px solid var(--line);
     padding: 12px 0;
 }
-.faq summary{
+.faq summary,
+.plant-more summary,
+.year-table summary,
+.photo-credits summary{
     color: var(--link);
     font-weight: 600;
     cursor: pointer;
 }
-.faq summary:hover{
+.year-table summary,
+.photo-credits summary{
+    font-size: 1.2em;
+}
+.faq summary:hover,
+.plant-more summary:hover,
+.year-table summary:hover,
+.photo-credits summary:hover{
     text-decoration: underline;
     text-underline-offset: 4px;
 }
@@ -922,6 +1188,29 @@ button.button-secondary:hover{
     border-radius: 8px;
     margin: 8px 0;
 }
+.places{ /* "4 of 12 places taken · 8 free" */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+.places.full{
+    color: var(--accent);
+}
+.group-edit{
+    margin: 12px 0;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+}
+.group-edit summary{
+    color: var(--link);
+    font-weight: 600;
+    cursor: pointer;
+}
+button:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 .hidden-notes{
     border: 1px dashed var(--line);
     border-radius: 8px;
@@ -1014,9 +1303,7 @@ input[type="file"]::file-selector-button:hover{
 
 /* ---------- Phones: drop the big side margins ---------- */
 @media (max-width: 700px){
-    .grid,
-    .legend,
-    .table-wrap{
+    .grid{
         margin-left: 16px;
         margin-right: 16px;
     }

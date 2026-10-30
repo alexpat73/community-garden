@@ -67,13 +67,13 @@
 
                 <section class="card" aria-labelledby="jobs-title">
                     <h2 id="jobs-title">This month's jobs</h2>
-                    <p class="jobs-progress" id="jobs-progress" aria-live="polite"></p>
-                    <ul class="checklist" id="jobs-list"></ul>
+                    <div class="jobs-box" id="jobs-box"></div>
                 </section>
 
                 <section class="card" aria-labelledby="season-title">
                     <h2 id="season-title"><svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#seedling"></use></svg> What's in season</h2>
                     <div id="season"></div>
+                    <button type="button" class="button-secondary" id="all-plants">Search all plants</button>
                     <h3>Browse the months</h3>
                     <div class="month-strip" id="month-strip"></div>
                 </section>
@@ -243,6 +243,11 @@
             </section>
         </main>
 
+        <!-- Always-visible "New note" button on Home -->
+        <button type="button" class="fab" id="fab-note" hidden>
+            <svg class="icon" aria-hidden="true"><use href="vendor/fontawesome/icons.svg#plus"></use></svg> New note
+        </button>
+
         <nav class="tabbar" id="tabbar" aria-label="App" hidden>
             <a href="#home" data-tab="home"><svg aria-hidden="true"><use href="vendor/fontawesome/icons.svg#house"></use></svg><span>Home</span></a>
             <a href="#explore" data-tab="explore"><svg aria-hidden="true"><use href="vendor/fontawesome/icons.svg#compass"></use></svg><span>Explore</span></a>
@@ -264,6 +269,7 @@
     <p class="frame-note">This is the mobile app. On a phone it fills the screen. <a href="index.html">Back to the desktop site</a></p>
 
     <script src="data.js"></script>
+    <script src="plant-photos.js"></script>
     <script src="gardens-data.js"></script>
     <script src="community-demo.js"></script>
     <script src="app.js"></script>
